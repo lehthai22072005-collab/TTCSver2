@@ -1,4 +1,41 @@
+# --- FRONTEND (ReactJS) ---
 node_modules/
-.cache/
-build/
+/.pnp
+.pnp.js
+/coverage
+/build
+/dist
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- BACKEND (Java Spring Boot) ---
+target/
+*.class
+bin/
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+.mtj.tmp/
+*.ctxt
+
+# --- IDE & SYSTEM (IntelliJ, VS Code, Windows) ---
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+.DS_Store
+Thumbs.db
