@@ -1,46 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function LeaveRequestPage() {
-    const [requests, setRequests] = useState([]);
-    const [formData, setFormData] = useState({
-        startDate: '',
-        endDate: '',
-        reason: ''
-    });
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState(null);
 
-    useEffect(() => {
-        fetchRequests();
-    }, []);
+    const [leaveRequests, setLeaveRequests] = useState([
+        { id: '01', startDate: '2026-03-01', endDate: '2026-03-02', reason: 'Nghỉ ốm', status: 'Chờ duyệt' },
+        { id: '02', startDate: '2026-03-05', endDate: '2026-03-05', reason: 'Việc gia đình', status: 'Đồng ý' },
+        { id: '03', startDate: '2026-03-10', endDate: '2026-03-11', reason: 'Đi khám bệnh', status: 'Từ chối' },
+    ]);
 
-    const fetchRequests = async () => {
-        try {
-            const employeeId = localStorage.getItem('employeeId') || '1'; // Mock employee ID
-            const res = await axios.get(`http://localhost:8080/api/leave-requests/employee/${employeeId}`);
-            setRequests(res.data);
-        } catch (err) {
-            console.error("Lỗi lấy danh sách nghỉ phép:", err);
-        }
+    const [newRequest, setNewRequest] = useState({ startDate: '', endDate: '', reason: '' });
+
+    // Hàm mở Modal xem chi tiết
+    const openViewModal = (req) => {
+        setSelectedRequest(req);
+        setShowViewModal(true);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const employeeId = localStorage.getItem('employeeId') || '1';
-            const employeeName = localStorage.getItem('username') || 'Giáo viên';
-            await axios.post('http://localhost:8080/api/leave-requests', {
-                employeeId,
-                employeeName,
-                ...formData
-            });
-            alert("Yêu cầu nghỉ phép đã được gửi!");
-            setFormData({ startDate: '', endDate: '', reason: '' });
-            fetchRequests();
-        } catch (err) {
-            console.error("Lỗi gửi yêu cầu nghỉ phép:", err);
-        }
+    const handleSendRequest = () => {
+        alert("Đã gửi đơn xin nghỉ!");
+        setShowCreateModal(false);
     };
 
     return (
@@ -49,67 +32,132 @@ function LeaveRequestPage() {
             <div className="main-content">
                 <TopBar />
                 <div className="content-body">
-                    <h2>Yêu Cầu Nghỉ Phép</h2>
+                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
+                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Nghỉ phép</h2>
+                    </div>
 
-                    <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-                        <div style={{ flex: '1', backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <h4 style={{ marginBottom: '15px' }}>Tạo Đơn Xin Nghỉ</h4>
-                            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                <div>
-                                    <label>Từ ngày</label>
-                                    <input type="date" required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
-                                </div>
-                                <div>
-                                    <label>Đến ngày</label>
-                                    <input type="date" required value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
-                                </div>
-                                <div>
-                                    <label>Lý do nghỉ</label>
-                                    <textarea required value={formData.reason} onChange={e => setFormData({ ...formData, reason: e.target.value })} rows="4" style={{ width: '100%', padding: '8px', marginTop: '5px' }}></textarea>
-                                </div>
-                                <button type="submit" className="btn-primary">Gửi Đơn</button>
-                            </form>
-                        </div>
+                    <div className="card p-4 mb-4 shadow-sm" style={{ border: '1px solid #cbd5e1', borderRadius: '4px' }}>
+                        <p style={{ fontSize: '1.2rem', marginBottom: '20px' }}>
+                            Số ngày phép còn lại: <b style={{ marginLeft: '10px' }}>5 ngày</b>
+                        </p>
+                        <button
+                            className="btn-primary"
+                            onClick={() => setShowCreateModal(true)}
+                            style={{ padding: '10px 25px', borderRadius: '4px' }}
+                        >
+                            [ + Tạo đơn ]
+                        </button>
+                    </div>
 
-                        <div style={{ flex: '2', backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <h4 style={{ marginBottom: '15px' }}>Lịch Sử Ngày Phép</h4>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ backgroundColor: '#f1f5f9', textAlign: 'left' }}>
-                                        <th style={{ padding: '10px' }}>ID</th>
-                                        <th style={{ padding: '10px' }}>Từ ngày</th>
-                                        <th style={{ padding: '10px' }}>Đến ngày</th>
-                                        <th style={{ padding: '10px' }}>Lý do</th>
-                                        <th style={{ padding: '10px' }}>Trạng thái phép</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {requests.map((r, idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                            <td style={{ padding: '10px' }}>{r.id}</td>
-                                            <td style={{ padding: '10px' }}>{r.startDate}</td>
-                                            <td style={{ padding: '10px' }}>{r.endDate}</td>
-                                            <td style={{ padding: '10px' }}>{r.reason}</td>
-                                            <td style={{ padding: '10px' }}>
-                                                <span style={{
-                                                    padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem',
-                                                    backgroundColor: r.status === 'APPROVED' ? '#dcfce7' : r.status === 'REJECTED' ? '#fee2e2' : '#fef9c3',
-                                                    color: r.status === 'APPROVED' ? '#166534' : r.status === 'REJECTED' ? '#991b1b' : '#854d0e'
-                                                }}>
-                                                    {r.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {requests.length === 0 && (
-                                        <tr><td colSpan="5" style={{ padding: '10px', textAlign: 'center' }}>Chưa có yêu cầu nào</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div className="card shadow-sm" style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                        <table className="data-table" style={{ marginTop: 0 }}>
+                            <thead style={{ backgroundColor: '#f8fafc' }}>
+                            <tr>
+                                <th>ID</th>
+                                <th>Từ ngày</th>
+                                <th>Đến ngày</th>
+                                <th>Trạng thái</th>
+                                <th style={{ textAlign: 'center' }}>Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {leaveRequests.map((req) => (
+                                <tr key={req.id}>
+                                    <td>{req.id}</td>
+                                    <td>{req.startDate}</td>
+                                    <td>{req.endDate}</td>
+                                    <td>
+                                            <span style={{
+                                                fontWeight: 'bold',
+                                                color: req.status === 'Đồng ý' ? '#10b981' : (req.status === 'Từ chối' ? '#ef4444' : '#f59e0b')
+                                            }}>
+                                                {req.status}
+                                            </span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button
+                                            onClick={() => openViewModal(req)}
+                                            style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                                        >
+                                            [Xem]
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
+            {/* MODAL TẠO ĐƠN NGHỈ */}
+            {showCreateModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ width: '550px', border: '2px solid #000', padding: 0 }}>
+                        <h3 style={{ textAlign: 'center', background: '#f8fafc', padding: '15px', borderBottom: '1px solid #000', fontWeight: 'bold', margin: 0 }}>
+                            TẠO ĐƠN NGHỈ
+                        </h3>
+                        <div style={{ padding: '30px' }}>
+                            <div className="form-group mb-3" style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center' }}>
+                                <label>Từ ngày:</label>
+                                <input type="date" className="form-control" onChange={e => setNewRequest({...newRequest, startDate: e.target.value})} />
+                            </div>
+                            <div className="form-group mb-3" style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center' }}>
+                                <label>Đến ngày:</label>
+                                <input type="date" className="form-control" onChange={e => setNewRequest({...newRequest, endDate: e.target.value})} />
+                            </div>
+                            <div className="form-group mb-4">
+                                <label className="mb-2 d-block">Lý do:</label>
+                                <textarea className="form-control" rows="3" style={{ border: '1px solid #000' }} onChange={e => setNewRequest({...newRequest, reason: e.target.value})}></textarea>
+                            </div>
+                            <div className="d-flex justify-content-center gap-5">
+                                <button className="btn-primary" onClick={handleSendRequest} style={{ padding: '10px 30px' }}>[ Gửi đơn ]</button>
+                                <button className="btn-secondary" onClick={() => setShowCreateModal(false)} style={{ padding: '10px 30px', background: 'none', border: 'none', color: '#000' }}>[ Hủy ]</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL XEM CHI TIẾT (Form nút xem bạn yêu cầu) */}
+            {showViewModal && selectedRequest && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ width: '550px', border: '2px solid #3b82f6', padding: 0 }}>
+                        <h3 style={{ textAlign: 'center', background: '#eff6ff', padding: '15px', borderBottom: '1px solid #3b82f6', fontWeight: 'bold', margin: 0 }}>
+                            CHI TIẾT ĐƠN NGHỈ
+                        </h3>
+                        <div style={{ padding: '30px', lineHeight: '2' }}>
+                            <p><b>Mã đơn:</b> <span style={{ marginLeft: '45px' }}>{selectedRequest.id}</span></p>
+                            <p><b>Từ ngày:</b> <span style={{ marginLeft: '40px' }}>{selectedRequest.startDate}</span></p>
+                            <p><b>Đến ngày:</b> <span style={{ marginLeft: '35px' }}>{selectedRequest.endDate}</span></p>
+                            <p><b>Trạng thái:</b>
+                                <span style={{
+                                    marginLeft: '32px',
+                                    fontWeight: 'bold',
+                                    color: selectedRequest.status === 'Đồng ý' ? '#10b981' : (selectedRequest.status === 'Từ chối' ? '#ef4444' : '#f59e0b')
+                                }}>
+                                    {selectedRequest.status}
+                                </span>
+                            </p>
+                            <div className="mt-3">
+                                <p><b>Lý do nghỉ:</b></p>
+                                <div style={{ padding: '10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', minHeight: '60px' }}>
+                                    {selectedRequest.reason}
+                                </div>
+                            </div>
+                            <div className="text-center mt-4">
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowViewModal(false)}
+                                    style={{ padding: '8px 40px', border: '1px solid #000' }}
+                                >
+                                    [ Đóng ]
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

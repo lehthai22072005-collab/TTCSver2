@@ -2,93 +2,57 @@ import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import '../App.css';
 
 function MySalaryPage() {
-    const [salaries] = useState([
-        { month: 'Tháng 4 / 2026', base: 15000000, allowance: 2000000, deduction: 500000, net: 16500000, status: 'Đã thanh toán' },
-        { month: 'Tháng 3 / 2026', base: 15000000, allowance: 1500000, deduction: 0, net: 16500000, status: 'Đã thanh toán' },
-        { month: 'Tháng 2 / 2026', base: 15000000, allowance: 3000000, deduction: 200000, net: 17800000, status: 'Đã thanh toán' }
-    ]);
+    const [view, setView] = useState('LIST');
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-    };
-
-    const handleDownloadPDF = (salary) => {
+    const handleExportPDF = () => {
         const doc = new jsPDF();
-        doc.setFontSize(22);
-        doc.text("PHIEU LUONG", 105, 20, { align: 'center' });
-        
-        doc.setFontSize(14);
-        doc.text(`Ky luong: ${salary.month}`, 20, 40);
-        doc.text(`Trang thai: ${salary.status}`, 20, 50);
-
-        const tableColumn = ["Chi tiet", "So tien (VND)"];
-        const tableRows = [
-            ["Luong co ban", formatCurrency(salary.base).replace('₫', '')],
-            ["Phu cap", formatCurrency(salary.allowance).replace('₫', '')],
-            ["Khau tru", formatCurrency(salary.deduction).replace('₫', '')],
-            ["Thuc nhan", formatCurrency(salary.net).replace('₫', '')]
-        ];
-
-        doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 60,
-        });
-
-        doc.save(`PhieuLuong_${salary.month.replace(/[\s/]/g, '')}.pdf`);
+        doc.text("PHIẾU LƯƠNG THÁNG 03/2026", 10, 10);
+        doc.text("Mã NV: GV001 - Họ tên: Nguyễn Văn A", 10, 20);
+        doc.text("Tổng nhận: 10,500,000 VND", 10, 30);
+        doc.save("PhieuLuong.pdf");
     };
 
-    return (
+    if (view === 'DETAIL') return (
         <div className="dashboard-layout">
-            <Sidebar />
-            <div className="main-content">
-                <TopBar />
-                <div className="content-body">
-                    <h3>Tra cứu Bảng lương</h3>
-                    <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Kỳ lương</th>
-                                    <th>Lương cơ bản</th>
-                                    <th>Phụ cấp (Tiết dạy thêm, v.v...)</th>
-                                    <th>Khấu trừ</th>
-                                    <th>Thực nhận</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {salaries.map((s, index) => (
-                                    <tr key={index}>
-                                        <td style={{ fontWeight: 'bold' }}>{s.month}</td>
-                                        <td>{formatCurrency(s.base)}</td>
-                                        <td>{formatCurrency(s.allowance)}</td>
-                                        <td style={{ color: '#ef4444' }}>{formatCurrency(s.deduction)}</td>
-                                        <td style={{ color: '#1cc88a', fontWeight: 'bold', fontSize: '1.1rem' }}>{formatCurrency(s.net)}</td>
-                                        <td><span style={{ backgroundColor: '#ccfbf1', padding: '5px 10px', borderRadius: '5px', color: '#0f766e', fontSize: '0.85rem', fontWeight: 'bold' }}>{s.status}</span></td>
-                                        <td>
-                                            <button className="btn-secondary" style={{ padding: '5px 10px', fontSize: '0.85rem', backgroundColor: '#e2e8f0', color: '#1e293b' }} onClick={() => handleDownloadPDF(s)}>
-                                                Tải PDF
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        <div style={{ marginTop: '20px', fontSize: '0.9rem', color: '#64748b' }}>
-                            <p>* Lương cơ bản và phụ cấp có thể thay đổi dựa trên tổng số giờ thực tế giảng dạy trong tháng.</p>
-                            <p>* Mọi thắc mắc về bảng lương vui lòng liên hệ trực tiếp phòng Kế toán.</p>
-                        </div>
+            <Sidebar /><div className="main-content"><TopBar />
+            <div className="content-body">
+                <div className="card p-4 mx-auto shadow" style={{ maxWidth: '500px', border: '1px solid #000' }}>
+                    <h3 className="text-center">PHIẾU LƯƠNG</h3>
+                    <p className="text-center">Tháng: 03/2026</p>
+                    <hr />
+                    <p>Mã NV: <b>GV001</b></p><p>Họ tên: <b>Nguyễn Văn A</b></p>
+                    <hr />
+                    <div className="d-flex justify-content-between"><p>Lương cơ bản:</p><p>10,000,000đ</p></div>
+                    <div className="d-flex justify-content-between"><p>Phụ cấp:</p><p>1,000,000đ</p></div>
+                    <div className="d-flex justify-content-between"><p>Khấu trừ:</p><p>500,000đ</p></div>
+                    <hr />
+                    <div className="d-flex justify-content-between text-success"><h4>TỔNG LƯƠNG:</h4><h4>10,500,000đ</h4></div>
+                    <div className="text-center mt-4">
+                        <button className="btn-primary" onClick={handleExportPDF}>[ Xuất PDF 📄 ]</button>
+                        <button className="btn-secondary ms-2" onClick={() => setView('LIST')}>Quay lại</button>
                     </div>
                 </div>
             </div>
         </div>
+        </div>
+    );
+
+    return (
+        <div className="dashboard-layout">
+            <Sidebar /><div className="main-content"><TopBar />
+            <div className="content-body">
+                <h2 className="mb-4">DANH SÁCH PHIẾU LƯƠNG</h2>
+                <table className="data-table">
+                    <thead><tr><th>Tháng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                    <tbody>
+                    <tr><td>03/26</td><td>Đã chốt</td><td><button className="btn-link" onClick={() => setView('DETAIL')}>[Xem chi tiết]</button></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div>
     );
 }
-
 export default MySalaryPage;

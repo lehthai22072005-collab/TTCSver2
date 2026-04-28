@@ -4,42 +4,43 @@ import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function EmployeePage() {
-    const [employees, setEmployees] = useState(() => {
-        const saved = localStorage.getItem('employeeData');
-        return saved ? JSON.parse(saved) : [];
-    });
-    const [showModal, setShowModal] = useState(false);
+    const [employees, setEmployees] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [newEmployee, setNewEmployee] = useState({ employeeId: '', fullName: '', email: '', position: 'Nhân viên', contract: 'Toàn thời gian' });
+    const [showModal, setShowModal] = useState(false);
+    const [mode, setMode] = useState('ADD'); // ADD, EDIT, VIEW
+    const [selectedEmp, setSelectedEmp] = useState({
+        id: '', fullName: '', email: '', phone: '',
+        position: 'Giảng viên', contractType: 'Full-time',
+        status: 'Còn hạn', startDate: '', endDate: '', note: ''
+    });
 
-    useEffect(() => {
-        if (!localStorage.getItem('employeeData')) {
-            axios.get("http://localhost:8080/api/employees")
-                .then(res => {
-                    setEmployees(res.data);
-                    localStorage.setItem('employeeData', JSON.stringify(res.data));
-                })
-                .catch(err => console.error(err));
-        }
-    }, []);
+    useEffect(() => { fetchEmployees(); }, []);
 
-    useEffect(() => {
-        localStorage.setItem('employeeData', JSON.stringify(employees));
-    }, [employees]);
-
-    const handleSaveEmployee = (e) => {
-        e.preventDefault();
-        // Giả lập lưu thành công (Nếu có API POST thì gọi axios.post ở đây)
-        const newEmpWithId = { ...newEmployee, id: Date.now() };
-        setEmployees([...employees, newEmpWithId]);
-        setShowModal(false);
-        setNewEmployee({ employeeId: '', fullName: '', email: '', position: 'Nhân viên', contract: 'Toàn thời gian' });
+    const fetchEmployees = async () => {
+        try {
+            const res = await axios.get("http://localhost:8080/api/employees");
+            setEmployees(res.data);
+        } catch (err) { console.error("Lỗi lấy dữ liệu:", err); }
     };
 
-    const filteredEmployees = employees.filter(emp => 
-        (emp.fullName && emp.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (emp.employeeId && emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const openModal = (actionMode, employee = null) => {
+        setMode(actionMode);
+        if (employee) {
+            setSelectedEmp({
+                ...employee,
+                fullName: employee.full_name || employee.fullName || '',
+                phone: employee.phone || '',
+                startDate: employee.startDate || '',
+                endDate: employee.endDate || '',
+                note: employee.note || '',
+                contractType: employee.contractType || 'Full-time',
+                status: employee.status || 'Còn hạn'
+            });
+        } else {
+            setSelectedEmp({ id: '', fullName: '', email: '', phone: '', position: 'Giảng viên', contractType: 'Full-time', status: 'Còn hạn', startDate: '', endDate: '', note: '' });
+        }
+        setShowModal(true);
+    };
 
     return (
         <div className="dashboard-layout">
@@ -47,89 +48,150 @@ function EmployeePage() {
             <div className="main-content">
                 <TopBar />
                 <div className="content-body">
-                    <div className="header-action" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h3>Hồ sơ nhân viên / giảng viên</h3>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <input 
-                                type="text" 
-                                placeholder="Tìm kiếm nhân viên..." 
+                    {/* Header chuẩn Wireframe */}
+                    <div className="header-action" style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
+                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Hệ thống Quản lý nhân sự</h2>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', width: '350px' }}>
+                            <input
+                                type="text"
+                                placeholder="[ Tìm kiếm 🔍 nhân viên ]"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                style={{ width: '100%', padding: '10px 15px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
                             />
-                            <button className="btn-primary" onClick={() => setShowModal(true)}>+ Thêm mới</button>
                         </div>
+                        <button className="btn-primary" onClick={() => openModal('ADD')} style={{ borderRadius: '4px', padding: '10px 25px' }}>
+                            [ + Thêm ]
+                        </button>
                     </div>
-                    <table className="data-table">
-                        <thead>
-                            <tr>
+
+                    {/* Table chuẩn cột Wireframe */}
+                    <div className="card shadow-sm" style={{ backgroundColor: '#fff', borderRadius: '4px', overflow: 'hidden' }}>
+                        <table className="data-table" style={{ marginTop: 0 }}>
+                            <thead>
+                            <tr style={{ backgroundColor: '#f8fafc' }}>
                                 <th>Mã NV</th>
-                                <th>Họ Tên</th>
+                                <th>Họ tên</th>
                                 <th>Email</th>
                                 <th>Chức vụ</th>
                                 <th>Hợp đồng</th>
-                                <th>Thao tác</th>
+                                <th style={{ textAlign: 'center' }}>Action</th>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {filteredEmployees.map(emp => (
-                                <tr key={emp.id || emp.employeeId}>
-                                    <td>{emp.employeeId || 'N/A'}</td>
-                                    <td className="font-bold">{emp.fullName}</td>
+                            </thead>
+                            <tbody>
+                            {employees.filter(e => (e.fullName || e.full_name)?.toLowerCase().includes(searchTerm.toLowerCase())).map((emp) => (
+                                <tr key={emp.id}>
+                                    <td>{emp.position === 'Giảng viên' ? `GV00${emp.id}` : `NV00${emp.id}`}</td>
+                                    <td className="font-bold">{emp.full_name || emp.fullName}</td>
                                     <td>{emp.email || 'N/A'}</td>
                                     <td>{emp.position}</td>
-                                    <td>{emp.contract || 'N/A'}</td>
                                     <td>
-                                        <button className="btn-sm btn-edit">Sửa</button>
-                                        <button className="btn-sm btn-delete">Xóa</button>
+                                            <span style={{ color: emp.id % 2 === 0 ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
+                                                {emp.id % 2 === 0 ? 'Hết hạn' : 'Còn hạn'}
+                                            </span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button
+                                            onClick={() => openModal('VIEW', emp)}
+                                            style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}
+                                        >
+                                            [Xem]
+                                        </button>
+                                        <button
+                                            onClick={() => openModal('EDIT', emp)}
+                                            style={{ color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                                        >
+                                            [Sửa]
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            {/* Modal Thêm Nhân Viên */}
+            {/* MODAL THÔNG TIN NHÂN VIÊN */}
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>Thêm nhân viên mới</h3>
-                        <form onSubmit={handleSaveEmployee}>
-                            <div className="form-group">
-                                <label>Mã nhân viên</label>
-                                <input type="text" value={newEmployee.employeeId} onChange={e => setNewEmployee({ ...newEmployee, employeeId: e.target.value })} required placeholder="Nhập mã nhân viên..." />
+                    <div className="modal-content" style={{ width: '650px', borderRadius: '4px', border: '2px solid #000', padding: 0 }}>
+                        <h3 style={{ textAlign: 'center', background: '#f8fafc', padding: '15px', margin: 0, borderBottom: '1px solid #000', fontWeight: 'bold' }}>
+                            THÔNG TIN NHÂN VIÊN
+                        </h3>
+                        <form style={{ padding: '30px' }}>
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Mã nhân viên:</label>
+                                <div style={{ padding: '10px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}>
+                                    [ AUTO / {selectedEmp.id ? (selectedEmp.position === 'Giảng viên' ? `GV00${selectedEmp.id}` : `NV00${selectedEmp.id}`) : 'NEW'} ]
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Họ và Tên</label>
-                                <input type="text" value={newEmployee.fullName} onChange={e => setNewEmployee({ ...newEmployee, fullName: e.target.value })} required placeholder="Nhập họ và tên..." />
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Họ và tên:</label>
+                                <input type="text" value={selectedEmp.fullName} readOnly={mode === 'VIEW'} onChange={e => setSelectedEmp({...selectedEmp, fullName: e.target.value})} style={{ border: 'none', borderBottom: '1px solid #000' }} />
                             </div>
-                            <div className="form-group">
-                                <label>Email</label>
-                                <input type="email" value={newEmployee.email} onChange={e => setNewEmployee({ ...newEmployee, email: e.target.value })} required placeholder="Nhập email..." />
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Email:</label>
+                                <input type="email" value={selectedEmp.email} readOnly={mode === 'VIEW'} onChange={e => setSelectedEmp({...selectedEmp, email: e.target.value})} style={{ border: 'none', borderBottom: '1px solid #000' }} />
                             </div>
-                            <div className="form-group">
-                                <label>Chức vụ</label>
-                                <select value={newEmployee.position} onChange={e => setNewEmployee({ ...newEmployee, position: e.target.value })}>
-                                    <option value="Nhân viên">Nhân viên</option>
-                                    <option value="Trưởng phòng">Trưởng phòng</option>
-                                    <option value="Chuyên viên">Chuyên viên</option>
-                                    <option value="Giảng viên">Giảng viên</option>
-                                    <option value="Giám đốc">Giám đốc</option>
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>SĐT:</label>
+                                <input type="text" value={selectedEmp.phone} readOnly={mode === 'VIEW'} onChange={e => setSelectedEmp({...selectedEmp, phone: e.target.value})} style={{ border: 'none', borderBottom: '1px solid #000' }} />
+                            </div>
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Chức vụ:</label>
+                                <select disabled={mode === 'VIEW'} value={selectedEmp.position} onChange={e => setSelectedEmp({...selectedEmp, position: e.target.value})}>
+                                    <option value="Giảng viên">Giáo viên</option>
+                                    <option value="Kế toán">Kế toán</option>
+                                    <option value="Bảo vệ">Bảo vệ</option>
+                                    <option value="Lao công">Lao công</option>
+                                    <option value="Hiệu trưởng">Hiệu trưởng</option>
+                                    <option value="Quản trị">Quản trị viên</option>
                                 </select>
                             </div>
-                            <div className="form-group">
-                                <label>Hợp đồng</label>
-                                <select value={newEmployee.contract} onChange={e => setNewEmployee({ ...newEmployee, contract: e.target.value })}>
-                                    <option value="Toàn thời gian">Toàn thời gian</option>
-                                    <option value="Bán thời gian">Bán thời gian</option>
-                                    <option value="Thử việc">Thử việc</option>
-                                    <option value="Thực tập sinh">Thực tập sinh</option>
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Loại hợp đồng:</label>
+                                <select disabled={mode === 'VIEW'} value={selectedEmp.contractType} onChange={e => setSelectedEmp({...selectedEmp, contractType: e.target.value})}>
+                                    <option value="Full-time">Full-time</option>
+                                    <option value="Part-time">Part-time</option>
+                                    <option value="Biên chế">Biên chế</option>
                                 </select>
                             </div>
-                            <div className="form-actions">
-                                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Hủy</button>
-                                <button type="submit" className="btn-primary">Lưu thông tin</button>
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Trạng thái HĐ:</label>
+                                <select disabled={mode === 'VIEW'} value={selectedEmp.status} onChange={e => setSelectedEmp({...selectedEmp, status: e.target.value})}>
+                                    <option value="Còn hạn">Còn hạn</option>
+                                    <option value="Hết hạn">Hết hạn</option>
+                                </select>
+                            </div>
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Ngày bắt đầu:</label>
+                                <input type="date" value={selectedEmp.startDate} readOnly={mode === 'VIEW'} onChange={e => setSelectedEmp({...selectedEmp, startDate: e.target.value})} />
+                            </div>
+
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center' }}>
+                                <label>Ngày kết thúc:</label>
+                                <input type="date" value={selectedEmp.endDate} readOnly={mode === 'VIEW'} onChange={e => setSelectedEmp({...selectedEmp, endDate: e.target.value})} />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Ghi chú:</label>
+                                <textarea rows="2" value={selectedEmp.note} readOnly={mode === 'VIEW'} onChange={e => setSelectedEmp({...selectedEmp, note: e.target.value})} style={{ width: '100%', border: '1px solid #cbd5e1', marginTop: '5px' }}></textarea>
+                            </div>
+
+                            <div className="form-actions" style={{ justifyContent: 'center', gap: '40px', marginTop: '20px' }}>
+                                {mode !== 'VIEW' && <button type="button" className="btn-primary" style={{ padding: '10px 40px' }}>[ Lưu ]</button>}
+                                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)} style={{ padding: '10px 40px' }}>[ Hủy ]</button>
                             </div>
                         </form>
                     </div>

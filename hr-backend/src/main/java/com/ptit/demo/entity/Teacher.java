@@ -4,17 +4,16 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "teacher")
+@Table(name = "staff") // <--- Quan trọng: Chỉ định map vào bảng staff trong DB
 @Data
 public class Teacher {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "teacher_id")
-    private Long id;
+    private Long staff_id; // Đổi tên cho khớp với DB
 
     private String username;
     private String password;
-    private String subject;
+    private String specialization;
 
     @OneToOne
     @JoinColumn(name = "employee_id")

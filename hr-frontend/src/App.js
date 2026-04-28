@@ -8,14 +8,15 @@ import EmployeePage from './pages/EmployeePage';
 import AttendancePage from './pages/AttendancePage';
 import ContractPage from './pages/ContractPage';
 import SalaryPage from './pages/SalaryPage';
-import AccountPage from './pages/AccountPage';
+// Thay đổi import: dùng AccountManagementPage thay vì AccountPage
+import AccountManagementPage from './pages/AccountManagementPage';
 import ProfilePage from './pages/ProfilePage';
 import MyAttendancePage from './pages/MyAttendancePage';
 import MySalaryPage from './pages/MySalaryPage';
 import MyContractPage from './pages/MyContractPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import PaymentHistoryPage from './pages/PaymentHistoryPage';
-import ReportsPage from './pages/ReportsPage';
+import ReportsPage from './pages/HrReportsPage';
 import DepartmentPage from './pages/DepartmentPage';
 import SettingsPage from './pages/SettingsPage';
 import SystemLogPage from './pages/SystemLogPage';
@@ -24,6 +25,8 @@ import LeaveManagementPage from './pages/LeaveManagementPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import HrReportsPage from './pages/HrReportsPage';
 import SalaryFundPage from './pages/SalaryFundPage';
+// Bổ sung thêm trang cấu hình cho Admin
+import SystemConfigPage from './pages/SystemConfigPage';
 
 function App() {
     return (
@@ -35,13 +38,17 @@ function App() {
                 <Route path="/attendance" element={<AttendancePage />} />
                 <Route path="/contracts" element={<ContractPage />} />
                 <Route path="/salary" element={<SalaryPage />} />
-                <Route path="/accounts" element={<AccountPage />} />
-                
+
+                {/* Sửa lại route này để nhận file AccountManagementPage.js mới của bạn */}
+                <Route path="/accounts" element={<AccountManagementPage />} />
+
                 {/* Các route dành cho Admin */}
                 <Route path="/departments" element={<DepartmentPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/system-logs" element={<SystemLogPage />} />
-                
+                {/* Bổ sung route cấu hình hệ thống khớp với Sidebar */}
+                <Route path="/system-config" element={<SystemConfigPage />} />
+
                 {/* Các route dành cho kế toán (Accountant) */}
                 <Route path="/payment-history" element={<PaymentHistoryPage />} />
                 <Route path="/reports" element={<ReportsPage />} />

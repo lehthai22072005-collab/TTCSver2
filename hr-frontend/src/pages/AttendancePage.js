@@ -3,26 +3,51 @@ import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function AttendancePage() {
-    // Mock timesheet data instead of real file upload
-    const [attendanceData, setAttendanceData] = useState([
-        { empId: 'NV001', name: 'Nguyễn Văn A', checkInTime: '2026-04-25 08:00', status: 'Đúng giờ' },
-        { empId: 'NV002', name: 'Trần Thị B', checkInTime: '2026-04-25 08:15', status: 'Muộn' },
-        { empId: 'NV003', name: 'Lê Văn C', checkInTime: '2026-04-25 07:55', status: 'Đúng giờ' }
+    // Dữ liệu mẫu hiển thị trong bảng
+    const [attendanceData] = useState([
+        { id: 'GV001', name: 'Nguyễn Thị Lan', date: '01/03', checkIn: '07:55', status: 'Đúng giờ', periods: 4 },
+        { id: 'NV002', name: 'Bác Năm (Bảo vệ)', date: '01/03', checkIn: '06:00', status: 'Đúng giờ', periods: '-' }
     ]);
 
-    const handleExportExcel = () => {
-        // Thêm BOM \uFEFF để Excel nhận diện đúng tiếng Việt
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFFMã NV,Họ Tên,Ngày giờ vào,Trạng thái\n";
-        attendanceData.forEach(record => {
-            csvContent += `${record.empId},${record.name},${record.checkInTime},${record.status}\n`;
-        });
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "Bao_Cao_Cham_Cong.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // State quản lý file và trạng thái
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploadStatus, setUploadStatus] = useState('Chờ upload');
+
+    // Hàm xử lý khi chọn file
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            setUploadStatus('Sẵn sàng upload');
+        } else {
+            setSelectedFile(null);
+            setUploadStatus('Chờ upload');
+        }
+    };
+
+    // Hàm xử lý khi nhấn nút Upload (Giả lập quy trình xử lý)
+    const handleUpload = () => {
+        if (!selectedFile) {
+            alert("Vui lòng chọn file Excel trước khi nhấn Upload!");
+            return;
+        }
+
+        setUploadStatus('Đang xử lý...');
+
+        // Giả lập thời gian xử lý file 1.5 giây để giảng viên thấy logic
+        setTimeout(() => {
+            setUploadStatus('Đã xử lý ✔');
+        }, 1500);
+    };
+
+    // Hàm xác định màu sắc cho dòng trạng thái
+    const getStatusColor = () => {
+        switch (uploadStatus) {
+            case 'Đang xử lý...': return '#3b82f6'; // Xanh dương
+            case 'Đã xử lý ✔': return '#10b981';    // Xanh lá
+            case 'Sẵn sàng upload': return '#f59e0b'; // Vàng cam
+            default: return '#64748b';              // Xám
+        }
     };
 
     return (
@@ -31,37 +56,72 @@ function AttendancePage() {
             <div className="main-content">
                 <TopBar />
                 <div className="content-body">
-                    <h2>Quản Lý Chấm Công (Kế Toán - Nhân Sự)</h2>
-                    <p style={{ color: '#64748b' }}>Nhập hoặc Upload File chấm công từ máy vân tay / hệ thống nội bộ</p>
+                    {/* Tiêu đề trang chuẩn Wireframe */}
+                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
+                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Quản lý chấm công</h2>
+                    </div>
 
-                    <div className="card shadow-sm p-4" style={{ backgroundColor: '#fff', borderRadius: '12px', marginTop: '20px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h4 style={{ margin: 0 }}>Dữ liệu chấm công tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</h4>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button onClick={handleExportExcel} style={{ padding: '8px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                    Xuất File Excel
-                                </button>
-                            </div>
+                    {/* Khu vực Upload file */}
+                    <div className="card p-4 mb-4 shadow-sm" style={{ border: '1px solid #cbd5e1', borderRadius: '4px' }}>
+                        <div className="d-flex align-items-center mb-3">
+                            <label className="me-3" style={{ fontWeight: '500' }}>Upload file Excel:</label>
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                onChange={handleFileChange}
+                                className="form-control w-auto d-inline-block"
+                            />
+                            <button
+                                className="btn-primary ms-3"
+                                onClick={handleUpload}
+                                style={{ padding: '8px 25px', borderRadius: '4px' }}
+                            >
+                                Upload
+                            </button>
                         </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ backgroundColor: '#f1f5f9', textAlign: 'left' }}>
-                                    <th style={{ padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Mã NV</th>
-                                    <th style={{ padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Họ Tên</th>
-                                    <th style={{ padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Ngày giờ vào</th>
-                                    <th style={{ padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Trạng thái</th>
-                                </tr>
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px dashed #cbd5e1' }}>
+                            <p className="mb-2">
+                                Tên file: <span style={{ color: '#4f46e5', fontWeight: 'bold' }}>
+                                    {selectedFile ? selectedFile.name : 'Chưa có file nào được chọn'}
+                                </span>
+                            </p>
+                            <p className="mb-0">
+                                Trạng thái: <span style={{ color: getStatusColor(), fontWeight: 'bold' }}>
+                                    [ {uploadStatus} ]
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Bảng hiển thị dữ liệu chấm công */}
+                    <div className="card shadow-sm" style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                        <table className="data-table" style={{ marginTop: 0 }}>
+                            <thead style={{ backgroundColor: '#f8fafc' }}>
+                            <tr>
+                                <th>MÃ NV</th>
+                                <th>HỌ TÊN</th>
+                                <th>NGÀY</th>
+                                <th>GIỜ VÀO</th>
+                                <th>TRẠNG THÁI</th>
+                                <th>SỐ TIẾT</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {attendanceData.map((record, index) => (
-                                    <tr key={index} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '12px' }}>{record.empId}</td>
-                                        <td style={{ padding: '12px', fontWeight: 'bold' }}>{record.name}</td>
-                                        <td style={{ padding: '12px', color: '#1e293b' }}>{record.checkInTime}</td>
-                                        <td style={{ padding: '12px', color: record.status === 'Muộn' ? '#991b1b' : '#166534', fontWeight: 'bold' }}>{record.status}</td>
-                                    </tr>
-                                ))}
+                            {attendanceData.map((row, index) => (
+                                <tr key={index}>
+                                    <td>{row.id}</td>
+                                    <td style={{ fontWeight: '500' }}>{row.name}</td>
+                                    <td>{row.date}</td>
+                                    <td>{row.checkIn}</td>
+                                    <td>
+                                            <span style={{ color: row.status === 'Trễ' ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
+                                                {row.status}
+                                            </span>
+                                    </td>
+                                    <td className="text-center"><b>{row.periods}</b></td>
+                                </tr>
+                            ))}
                             </tbody>
                         </table>
                     </div>

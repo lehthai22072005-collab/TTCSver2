@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
-import '../App.css';
 
 function PaymentHistoryPage() {
+    // Dữ liệu mẫu theo Wireframe: Tháng | Ngày chốt | Trạng thái
     const [history] = useState([
-        { id: 'GD_001', date: '05/04/2026', title: 'Thanh toán lương kỳ tháng 3/2026', amount: 156000000, method: 'Chuyển khoản Ngân hàng', status: 'Thành công' },
-        { id: 'GD_002', date: '05/03/2026', title: 'Thanh toán lương kỳ tháng 2/2026', amount: 154500000, method: 'Chuyển khoản Ngân hàng', status: 'Thành công' },
-        { id: 'GD_003', date: '15/02/2026', title: 'Chi trả tiền thưởng Tết Nguyên Đán', amount: 85000000, method: 'Chuyển khoản Ngân hàng', status: 'Thành công' },
-        { id: 'GD_004', date: '05/02/2026', title: 'Thanh toán lương kỳ tháng 1/2026', amount: 152000000, method: 'Chuyển khoản Ngân hàng', status: 'Thành công' },
+        { id: 1, month: '02/26', lockDate: '28/02', status: 'Đã chi' },
+        { id: 2, month: '01/26', lockDate: '31/01', status: 'Đã chi' },
     ]);
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    // State cho Modal xem chi tiết
+    const [showDetail, setShowDetail] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState('');
+
+    // Dữ liệu bảng lương giả lập để hiển thị lại (Read-only)
+    const mockSalaryDetails = [
+        { id: 'GV001', name: 'Nguyen Van A', workDays: 26, periods: 40, total: 11000000 },
+        { id: 'NV002', name: 'Tran Thi B', workDays: 24, periods: 35, total: 9500000 }
+    ];
+
+    const handleViewDetail = (month) => {
+        setSelectedMonth(month);
+        setShowDetail(true);
     };
 
     return (
@@ -21,38 +30,93 @@ function PaymentHistoryPage() {
             <div className="main-content">
                 <TopBar />
                 <div className="content-body">
-                    <div className="header-action">
-                        <h3>Lịch sử Chi trả</h3>
-                        <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span>🔄</span> Đồng bộ hệ thống</button>
+                    {/* Header chuẩn Wireframe */}
+                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
+                        <h2 style={{ fontWeight: 'bold' }}>LỊCH SỬ CHI TRẢ</h2>
                     </div>
-                    <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                        <table className="data-table">
+
+                    <div className="card shadow-sm" style={{ backgroundColor: '#fff', borderRadius: '8px', overflow: 'hidden' }}>
+                        <table className="data-table" style={{ marginTop: 0 }}>
                             <thead>
-                                <tr>
-                                    <th>Mã GD</th>
-                                    <th>Ngày thanh toán</th>
-                                    <th>Nội dung chi trả</th>
-                                    <th>Tổng số tiền</th>
-                                    <th>Phương thức chuyển</th>
-                                    <th>Trạng thái</th>
-                                </tr>
+                            <tr style={{ backgroundColor: '#f8fafc' }}>
+                                <th>Tháng</th>
+                                <th>Ngày chốt</th>
+                                <th>Trạng thái</th>
+                                <th style={{ textAlign: 'center' }}>Action</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {history.map((record, index) => (
-                                    <tr key={index}>
-                                        <td style={{ fontWeight: 'bold', color: '#64748b' }}>{record.id}</td>
-                                        <td>{record.date}</td>
-                                        <td>{record.title}</td>
-                                        <td style={{ color: '#0ea5e9', fontWeight: 'bold' }}>{formatCurrency(record.amount)}</td>
-                                        <td>{record.method}</td>
-                                        <td><span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>{record.status}</span></td>
-                                    </tr>
-                                ))}
+                            {history.map((item) => (
+                                <tr key={item.id}>
+                                    <td style={{ fontWeight: 'bold' }}>{item.month}</td>
+                                    <td>{item.lockDate}</td>
+                                    <td>
+                                        <span style={{ color: '#10b981', fontWeight: '500' }}>{item.status}</span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button
+                                            onClick={() => handleViewDetail(item.month)}
+                                            style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', textDecoration: 'underline' }}
+                                        >
+                                            [Xem chi tiết]
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+
+            {/* MODAL CHI TIẾT BẢNG LƯƠNG (READ-ONLY) */}
+            {showDetail && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ width: '800px', borderRadius: '4px', border: '2px solid #000' }}>
+                        <h3 style={{ textAlign: 'center', background: '#f8fafc', padding: '15px', borderBottom: '1px solid #000' }}>
+                            CHI TIẾT BẢNG LƯƠNG THÁNG {selectedMonth}
+                        </h3>
+                        <div style={{ padding: '20px' }}>
+                            <p style={{ fontStyle: 'italic', marginBottom: '15px', color: '#64748b' }}>
+                                (Hiển thị lại bảng lương đã chốt - chế độ chỉ đọc)
+                            </p>
+
+                            <table className="data-table">
+                                <thead>
+                                <tr style={{ backgroundColor: '#f1f5f9' }}>
+                                    <th>Mã NV</th>
+                                    <th>Họ tên</th>
+                                    <th>Công</th>
+                                    <th>Tiết dạy</th>
+                                    <th>Tổng nhận</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {mockSalaryDetails.map((s, idx) => (
+                                    <tr key={idx}>
+                                        <td>{s.id}</td>
+                                        <td className="font-bold">{s.name}</td>
+                                        <td>{s.workDays}</td>
+                                        <td>{s.periods}</td>
+                                        <td style={{ fontWeight: 'bold' }}>{(s.total / 1000000)}tr</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+
+                            <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowDetail(false)}
+                                    style={{ padding: '10px 40px', border: '1px solid #000' }}
+                                >
+                                    [ Đóng ]
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
