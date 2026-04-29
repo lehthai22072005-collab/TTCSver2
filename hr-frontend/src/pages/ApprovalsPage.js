@@ -3,175 +3,178 @@ import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function ApprovalsPage() {
-    // 1. Dữ liệu mẫu khớp Wireframe
-    const [requests, setRequests] = useState([
-        {
-            id: '01', employeeId: 'GV001', name: 'Nguyễn Văn A', dept: 'Khoa CNTT',
-            from: '01/03/2026', to: '02/03/2026', days: 2,
-            type: 'Nghỉ phép năm', reason: 'Xin nghỉ việc gia đình', status: 'Chờ duyệt'
-        },
-        {
-            id: '02', employeeId: 'NV002', name: 'Trần Thị B', dept: 'Hành chính',
-            from: '05/03/2026', to: '05/03/2026', days: 1,
-            type: 'Nghỉ ốm', reason: 'Đi khám bệnh', status: 'Chờ duyệt'
-        }
+    // Quản lý danh sách đơn từ để có thể thao tác phê duyệt/từ chối
+    const [approvals, setApprovals] = useState([
+        { id: '01', staffId: 'GV001', from: '01/03/2026', to: '02/03/2026', status: 'Chờ duyệt', type: 'Nghỉ phép năm' },
+        { id: '02', staffId: 'NV002', from: '05/03/2026', to: '05/03/2026', status: 'Chờ duyệt', type: 'Việc riêng' },
     ]);
 
     const [filter, setFilter] = useState('Tất cả');
-    const [selectedRequest, setSelectedRequest] = useState(null); // Đơn đang xem chi tiết
-    const [note, setNote] = useState(''); // Ghi chú duyệt
 
-    // 2. Hàm xử lý Duyệt / Từ chối
-    const handleAction = (id, newStatus) => {
-        setRequests(requests.map(req => req.id === id ? { ...req, status: newStatus } : req));
-        setSelectedRequest(null);
-        alert(`Hệ thống: Đã ${newStatus} đơn số ${id}`);
+    // Hàm xử lý phê duyệt nhanh
+    const handleAction = (id, action) => {
+        const statusText = action === 'approve' ? 'Đã duyệt' : 'Từ chối';
+        setApprovals(approvals.map(item =>
+            item.id === id ? { ...item, status: statusText } : item
+        ));
+        alert(`Hệ thống: Đã thực hiện ${statusText} cho đơn mã ${id}`);
     };
-
-    const filteredRequests = filter === 'Tất cả' ? requests : requests.filter(r => r.status === filter);
 
     return (
         <div className="dashboard-layout">
             <Sidebar />
             <div className="main-content">
                 <TopBar />
-                <div className="content-body" style={{ maxWidth: '1000px' }}>
+                <div className="content-body" style={{ backgroundColor: '#f4f7fe', minHeight: '100vh', padding: '30px' }}>
 
-                    {/* Header chuẩn Wireframe */}
-                    <div style={{ borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '20px' }}>
-                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Phê duyệt đơn từ</h2>
-                    </div>
+                    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                        {/* Header & Bộ lọc */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                            <h2 style={{ fontWeight: 'bold', color: '#1b2559', textTransform: 'uppercase', margin: 0 }}>
+                                Phê duyệt đơn từ
+                            </h2>
 
-                    {/* Bộ lọc trạng thái */}
-                    <div style={{ marginBottom: '20px' }}>
-                        <select
-                            style={{ padding: '8px 15px', border: '1px solid #000', cursor: 'pointer' }}
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                        >
-                            <option value="Tất cả">[ Lọc trạng thái ▼ ]</option>
-                            <option value="Chờ duyệt">Chờ duyệt</option>
-                            <option value="Đồng ý">Đã đồng ý</option>
-                            <option value="Từ chối">Đã từ chối</option>
-                        </select>
-                    </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ color: '#707eae', fontSize: '0.9rem' }}>Lọc trạng thái:</span>
+                                <select
+                                    style={selectStyle}
+                                    value={filter}
+                                    onChange={(e) => setFilter(e.target.value)}
+                                >
+                                    <option>Tất cả</option>
+                                    <option>Chờ duyệt</option>
+                                    <option>Đã duyệt</option>
+                                    <option>Từ chối</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    {/* Bảng danh sách chuẩn Wireframe 2 */}
-                    <div style={{ border: '1px solid #000', backgroundColor: '#fff' }}>
-                        <table className="data-table" style={{ marginTop: 0 }}>
-                            <thead>
-                            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #000' }}>
-                                <th>ID</th>
-                                <th>Nhân viên</th>
-                                <th>Từ ngày</th>
-                                <th>Đến ngày</th>
-                                <th>Trạng thái</th>
-                                <th>Thao tác</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {filteredRequests.map((req) => (
-                                <tr key={req.id} style={{ borderBottom: '1px dashed #ccc' }}>
-                                    <td>{req.id}</td>
-                                    <td>{req.employeeId}</td>
-                                    <td>{req.from}</td>
-                                    <td>{req.to}</td>
-                                    <td style={{
-                                        fontWeight: 'bold',
-                                        color: req.status === 'Chờ duyệt' ? '#f59e0b' : req.status === 'Đồng ý' ? '#10b981' : '#ef4444'
-                                    }}>
-                                        {req.status}
-                                    </td>
-                                    <td>
-                                        <button
-                                            onClick={() => setSelectedRequest(req)}
-                                            style={{ background: 'none', border: '1px solid #000', padding: '2px 10px', cursor: 'pointer' }}
-                                        >
-                                            [ Xem chi tiết ]
-                                        </button>
-                                    </td>
+                        {/* Bảng danh sách đơn từ */}
+                        <div style={tableCardStyle}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                <tr style={{ borderBottom: '1px solid #e9edf7' }}>
+                                    <th style={thStyle}>ID</th>
+                                    <th style={thStyle}>NHÂN VIÊN</th>
+                                    <th style={thStyle}>LOẠI ĐƠN</th>
+                                    <th style={thStyle}>TỪ NGÀY</th>
+                                    <th style={thStyle}>ĐẾN NGÀY</th>
+                                    <th style={thStyle}>TRẠNG THÁI</th>
+                                    <th style={{ ...thStyle, textAlign: 'center' }}>THAO TÁC</th>
                                 </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                {approvals.map((item) => (
+                                    <tr key={item.id} style={trStyle}>
+                                        <td style={tdStyle}>{item.id}</td>
+                                        <td style={{ ...tdStyle, fontWeight: '700', color: '#1b2559' }}>{item.staffId}</td>
+                                        <td style={tdStyle}>{item.type}</td>
+                                        <td style={tdStyle}>{item.from}</td>
+                                        <td style={tdStyle}>{item.to}</td>
+                                        <td style={tdStyle}>
+                                                <span style={getStatusBadge(item.status)}>
+                                                    {item.status}
+                                                </span>
+                                        </td>
+                                        <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                            {item.status === 'Chờ duyệt' ? (
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                                    <button
+                                                        onClick={() => handleAction(item.id, 'approve')}
+                                                        style={{ ...btnAction, backgroundColor: '#05cd99' }}
+                                                    >
+                                                        Duyệt
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAction(item.id, 'reject')}
+                                                        style={{ ...btnAction, backgroundColor: '#ee5d50' }}
+                                                    >
+                                                        Từ chối
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: '#a3aed0', fontSize: '0.85rem' }}>Đã xử lý</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                    {/* Action nhanh bên ngoài nếu cần */}
-                    <div style={{ marginTop: '20px', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                        * Nhấn "Xem chi tiết" để thực hiện Đồng ý hoặc Từ chối đơn.
+                        <p style={{ marginTop: '20px', color: '#707eae', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                            * Lưu ý: Các đơn đã phê duyệt hoặc từ chối sẽ được lưu lịch sử và gửi thông báo tới nhân viên.
+                        </p>
                     </div>
                 </div>
             </div>
-
-            {/* MODAL CHI TIẾT ĐƠN NGHỈ - Khớp chuẩn Wireframe 3 */}
-            {selectedRequest && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-                }}>
-                    <div style={{
-                        backgroundColor: '#fff', width: '500px', border: '2px solid #000', padding: '0'
-                    }}>
-                        <div style={{ borderBottom: '1px solid #000', padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>
-                            CHI TIẾT ĐƠN NGHỈ
-                        </div>
-
-                        <div style={{ padding: '20px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                <span><b>ID:</b> {selectedRequest.id}</span>
-                                <span><b>Trạng thái:</b> {selectedRequest.status}</span>
-                            </div>
-
-                            <div style={{ border: '1px dashed #000', padding: '10px', marginBottom: '15px' }}>
-                                <p>Mã NV: {selectedRequest.employeeId}</p>
-                                <p>Họ tên: {selectedRequest.name}</p>
-                                <p>Phòng ban: {selectedRequest.dept}</p>
-                            </div>
-
-                            <div style={{ border: '1px dashed #000', padding: '10px', marginBottom: '15px' }}>
-                                <p>Từ ngày: {selectedRequest.from}</p>
-                                <p>Đến ngày: {selectedRequest.to}</p>
-                                <p>Số ngày nghỉ: {selectedRequest.days} ngày</p>
-                            </div>
-
-                            <div style={{ border: '1px dashed #000', padding: '10px', marginBottom: '15px' }}>
-                                <p>Loại phép: {selectedRequest.type}</p>
-                                <p>Lý do: [ {selectedRequest.reason} ]</p>
-                            </div>
-
-                            <div style={{ marginBottom: '15px' }}>
-                                <label>Ghi chú duyệt:</label>
-                                <textarea
-                                    style={{ width: '100%', height: '60px', border: '1px solid #000', marginTop: '5px' }}
-                                    placeholder="Nhập lý do nếu từ chối..."
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                />
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-                                <button onClick={() => setSelectedRequest(null)} style={{ border: '1px solid #000', padding: '8px 20px', cursor: 'pointer' }}>[ Đóng ]</button>
-                                <div>
-                                    <button
-                                        onClick={() => handleAction(selectedRequest.id, 'Đồng ý')}
-                                        style={{ backgroundColor: '#fff', border: '2px solid #000', padding: '8px 20px', cursor: 'pointer', marginRight: '10px', fontWeight: 'bold' }}
-                                    >
-                                        [ Đồng ý ✔ ]
-                                    </button>
-                                    <button
-                                        onClick={() => handleAction(selectedRequest.id, 'Từ chối')}
-                                        style={{ backgroundColor: '#fff', border: '2px solid #000', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold', color: 'red' }}
-                                    >
-                                        [ Từ chối ✘ ]
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
+
+// --- Styles chuyên nghiệp ---
+const tableCardStyle = {
+    backgroundColor: '#fff',
+    borderRadius: '20px',
+    padding: '20px',
+    boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)',
+    border: 'none'
+};
+
+const thStyle = {
+    textAlign: 'left',
+    padding: '15px 10px',
+    color: '#a3aed0',
+    fontSize: '0.85rem',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: '0.02em'
+};
+
+const tdStyle = {
+    padding: '20px 10px',
+    fontSize: '0.95rem',
+    color: '#2b3674'
+};
+
+const trStyle = {
+    borderBottom: '1px solid #f4f7fe'
+};
+
+const selectStyle = {
+    padding: '8px 15px',
+    borderRadius: '10px',
+    border: '1px solid #e0e5f2',
+    color: '#2b3674',
+    fontWeight: '600',
+    outline: 'none',
+    cursor: 'pointer'
+};
+
+const btnAction = {
+    padding: '6px 15px',
+    border: 'none',
+    borderRadius: '8px',
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: '0.85rem',
+    cursor: 'pointer',
+    transition: 'transform 0.1s'
+};
+
+const getStatusBadge = (status) => {
+    let colors = { bg: '#fff7e6', text: '#ffab00' }; // Chờ duyệt
+    if (status === 'Đã duyệt') colors = { bg: '#e6fffb', text: '#00b8d9' };
+    if (status === 'Từ chối') colors = { bg: '#fff1f0', text: '#ff5630' };
+
+    return {
+        padding: '5px 12px',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        fontWeight: 'bold',
+        backgroundColor: colors.bg,
+        color: colors.text
+    };
+};
 
 export default ApprovalsPage;

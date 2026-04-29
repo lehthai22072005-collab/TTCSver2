@@ -1,97 +1,140 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
+// Dữ liệu quỹ lương 12 tháng (đơn vị: triệu VNĐ)
+const salaryData = [
+    { month: 'T1', value: 550 }, { month: 'T2', value: 490 },
+    { month: 'T3', value: 620 }, { month: 'T4', value: 650 },
+    { month: 'T5', value: 580 }, { month: 'T6', value: 530 },
+    { month: 'T7', value: 545 }, { month: 'T8', value: 560 },
+    { month: 'T9', value: 630 }, { month: 'T10', value: 670 },
+    { month: 'T11', value: 510 }, { month: 'T12', value: 520 },
+];
+
 function SalaryFundPage() {
-    const [selectedYear, setSelectedYear] = useState('2026');
-
-    // Dữ liệu biểu đồ từ T1 đến T12 chuẩn Wireframe
-    const data = [
-        { name: 'T1', value: 550 }, { name: 'T2', value: 500 }, { name: 'T3', value: 600 },
-        { name: 'T4', value: 630 }, { name: 'T5', value: 580 }, { name: 'T6', value: 530 },
-        { name: 'T7', value: 540 }, { name: 'T8', value: 560 }, { name: 'T9', value: 620 },
-        { name: 'T10', value: 640 }, { name: 'T11', value: 510 }, { name: 'T12', value: 520 },
-    ];
-
-    const handleExport = () => {
-        alert(`Đang khởi tạo báo cáo Quỹ lương năm ${selectedYear} chuẩn PDF...`);
-    };
-
     return (
         <div className="dashboard-layout">
             <Sidebar />
             <div className="main-content">
                 <TopBar />
-                <div className="content-body" style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <div className="content-body" style={{ backgroundColor: '#f4f7fe', minHeight: '100vh', padding: '30px' }}>
 
-                    {/* 1. Tiêu đề in hoa có gạch chân */}
-                    <div style={{ borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '20px', textAlign: 'center' }}>
-                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Quỹ lương</h2>
-                    </div>
-
-                    {/* 2. Bộ lọc thời gian chọn năm */}
-                    <div style={{ border: '1px solid #000', padding: '15px', marginBottom: '25px', backgroundColor: '#f8fafc' }}>
-                        <span>Thời gian: </span>
-                        <select
-                            style={{ padding: '5px 15px', border: '1px solid #000', fontWeight: 'bold', cursor: 'pointer' }}
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(e.target.value)}
-                        >
-                            <option value="2025">[ Năm 2025 ▼ ]</option>
-                            <option value="2026">[ Năm 2026 ▼ ]</option>
-                            <option value="2027">[ Năm 2027 ▼ ]</option>
-                        </select>
-                    </div>
-
-                    {/* 3. Biểu đồ chi phí lương theo tháng (Bar Chart) */}
-                    <div style={{ border: '1px solid #000', padding: '25px', marginBottom: '25px', backgroundColor: '#fff' }}>
-                        <h4 style={{ fontWeight: 'bold', marginBottom: '20px' }}>| Biểu đồ chi phí lương theo tháng</h4>
-                        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '15px' }}>(Bar chart: T1 → T12)</p>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={data}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" />
-                                <YAxis unit=" Tr" />
-                                <Tooltip formatter={(value) => `${value} Triệu VNĐ`} />
-                                <Bar dataKey="value" fill="#4f46e5" radius={[2, 2, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* 4. Tổng kết số liệu hàng dọc chuẩn Wireframe */}
-                    <div style={{ border: '1px solid #000', padding: '25px', backgroundColor: '#fff', lineHeight: '2.5' }}>
-                        <div style={{ borderBottom: '1px dashed #ccc', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>| Tổng quỹ lương năm:</span>
-                            <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>6.824.195.104 đ</span>
+                    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                        {/* Header & Filter */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                            <h2 style={{ fontWeight: 'bold', color: '#1b2559', textTransform: 'uppercase' }}>
+                                Biến động quỹ lương
+                            </h2>
+                            <div style={filterBoxStyle}>
+                                <span style={{ color: '#707eae', fontSize: '0.9rem', marginRight: '10px' }}>Thời gian:</span>
+                                <select style={selectStyle}><option>[ Năm 2026 ]</option></select>
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
-                            <span>| Tổng bảo hiểm đã đóng:</span>
-                            <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>716.540.486 đ</span>
+
+                        {/* Bar Chart Section */}
+                        <div style={cardStyle}>
+                            <h5 style={chartTitleStyle}>| Biểu đồ chi phí lương theo tháng</h5>
+                            <p style={subTitleStyle}>(Dữ liệu tổng hợp từ T1 đến T12 - Đơn vị: Triệu VNĐ)</p>
+                            <div style={{ height: '350px', marginTop: '20px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={salaryData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e9edf7" />
+                                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#a3aed0', fontSize: 12}} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{fill: '#a3aed0', fontSize: 12}} />
+                                        <Tooltip
+                                            cursor={{fill: '#f4f7fe'}}
+                                            contentStyle={{borderRadius: '10px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)'}}
+                                        />
+                                        <Bar dataKey="value" radius={[5, 5, 0, 0]} barSize={40}>
+                                            {salaryData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#4318ff' : '#707eae'} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Stats Summary Cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', marginTop: '30px' }}>
+                            <div style={cardStyle}>
+                                <p style={subTitleStyle}>Tổng quỹ lương năm</p>
+                                <h3 style={{ color: '#1b2559', fontWeight: '800' }}>6.824.195.104 đ</h3>
+                            </div>
+                            <div style={cardStyle}>
+                                <p style={subTitleStyle}>Tổng bảo hiểm đã đóng (10.5%)</p>
+                                <h3 style={{ color: '#05cd99', fontWeight: '800' }}>716.540.486 đ</h3>
+                            </div>
+                        </div>
+
+                        {/* Export Button */}
+                        <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                            <button
+                                style={exportBtnStyle}
+                                onClick={() => alert("Hệ thống: Đang xuất báo cáo tài chính PDF...")}
+                            >
+                                [ XUẤT BÁO CÁO PDF ]
+                            </button>
                         </div>
                     </div>
-
-                    {/* 5. Nút hành động */}
-                    <div style={{ textAlign: 'center', marginTop: '40px', paddingBottom: '60px' }}>
-                        <button
-                            onClick={handleExport}
-                            style={{
-                                padding: '15px 50px',
-                                border: '2px solid #000',
-                                backgroundColor: '#fff',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                boxShadow: '5px 5px 0px #000'
-                            }}
-                        >
-                            [ Xuất báo cáo PDF ]
-                        </button>
-                    </div>
-
                 </div>
             </div>
         </div>
     );
 }
+
+// --- Styles chuyên nghiệp ---
+const cardStyle = {
+    backgroundColor: '#fff',
+    borderRadius: '20px',
+    padding: '30px',
+    boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)',
+    border: 'none'
+};
+
+const filterBoxStyle = {
+    backgroundColor: '#fff',
+    padding: '10px 20px',
+    borderRadius: '15px',
+    boxShadow: '0px 10px 20px rgba(112, 144, 176, 0.05)'
+};
+
+const selectStyle = {
+    padding: '8px 15px',
+    borderRadius: '10px',
+    border: '1px solid #e0e5f2',
+    color: '#2b3674',
+    fontWeight: '600',
+    outline: 'none'
+};
+
+const chartTitleStyle = {
+    fontSize: '1.2rem',
+    fontWeight: '700',
+    color: '#1b2559',
+    marginBottom: '5px'
+};
+
+const subTitleStyle = {
+    color: '#a3aed0',
+    fontSize: '0.9rem',
+    marginBottom: '10px',
+    fontWeight: '500'
+};
+
+const exportBtnStyle = {
+    backgroundColor: '#fff',
+    color: '#1b2559',
+    border: '3px solid #1b2559',
+    padding: '15px 50px',
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    boxShadow: '8px 8px 0px #000',
+    transition: 'all 0.2s'
+};
 
 export default SalaryFundPage;

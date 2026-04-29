@@ -1,52 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function AttendancePage() {
-    // Dữ liệu mẫu hiển thị trong bảng
-    const [attendanceData] = useState([
-        { id: 'GV001', name: 'Nguyễn Thị Lan', date: '01/03', checkIn: '07:55', status: 'Đúng giờ', periods: 4 },
-        { id: 'NV002', name: 'Bác Năm (Bảo vệ)', date: '01/03', checkIn: '06:00', status: 'Đúng giờ', periods: '-' }
-    ]);
+    const [attendanceList, setAttendanceList] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // State quản lý file và trạng thái
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [uploadStatus, setUploadStatus] = useState('Chờ upload');
+    // --- BIẾN TRẠNG THÁI CHO UPLOAD ---
+    const [selectedFile, setSelectedFile] = useState(null); // Lưu file người dùng chọn
+    const [uploadStatus, setUploadStatus] = useState("Chờ upload"); // Trạng thái text
+    const [fileName, setFileName] = useState("Chưa có file nào được chọn"); // Tên file hiển thị
 
-    // Hàm xử lý khi chọn file
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            setUploadStatus('Sẵn sàng upload');
-        } else {
-            setSelectedFile(null);
-            setUploadStatus('Chờ upload');
+    useEffect(() => {
+        fetchAttendance();
+    }, []);
+
+    const fetchAttendance = async () => {
+        try {
+            const res = await axios.get("http://localhost:8080/api/attendance/all");
+            setAttendanceList(res.data);
+            setLoading(false);
+        } catch (err) {
+            console.error("Lỗi kết nối API:", err);
+            setLoading(false);
         }
     };
 
-    // Hàm xử lý khi nhấn nút Upload (Giả lập quy trình xử lý)
-    const handleUpload = () => {
+    // --- HÀM XỬ LÝ KHI CHỌN FILE ---
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            setFileName(file.name);
+            setUploadStatus("Sẵn sàng để upload");
+        }
+    };
+
+    // --- HÀM XỬ LÝ KHI BẤM NÚT UPLOAD ---
+    const handleUpload = async () => {
         if (!selectedFile) {
-            alert("Vui lòng chọn file Excel trước khi nhấn Upload!");
+            alert("Vui lòng chọn 1 file Excel trước!");
             return;
         }
 
-        setUploadStatus('Đang xử lý...');
+        const formData = new FormData();
+        formData.append("file", selectedFile);
 
-        // Giả lập thời gian xử lý file 1.5 giây để giảng viên thấy logic
-        setTimeout(() => {
-            setUploadStatus('Đã xử lý ✔');
-        }, 1500);
-    };
+        try {
+            setUploadStatus("Đang xử lý...");
+            // Link API này bạn cần tạo ở Backend để đọc Excel
+            await axios.post("http://localhost:8080/api/attendance/upload", formData);
 
-    // Hàm xác định màu sắc cho dòng trạng thái
-    const getStatusColor = () => {
-        switch (uploadStatus) {
-            case 'Đang xử lý...': return '#3b82f6'; // Xanh dương
-            case 'Đã xử lý ✔': return '#10b981';    // Xanh lá
-            case 'Sẵn sàng upload': return '#f59e0b'; // Vàng cam
-            default: return '#64748b';              // Xám
+            setUploadStatus("Upload thành công!");
+            alert("Đã tải dữ liệu lên thành công!");
+            fetchAttendance(); // Tải lại bảng sau khi upload
+        } catch (err) {
+            setUploadStatus("Lỗi khi upload!");
+            console.error(err);
         }
     };
 
@@ -55,71 +66,51 @@ function AttendancePage() {
             <Sidebar />
             <div className="main-content">
                 <TopBar />
-                <div className="content-body">
-                    {/* Tiêu đề trang chuẩn Wireframe */}
-                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
-                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Quản lý chấm công</h2>
+                <div className="content-body" style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
+                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>QUẢN LÝ CHẤM CÔNG</h2>
+
+                    {/* KHUNG UPLOAD - ĐÃ FIX LOGIC */}
+                    <div style={cardStyle}>
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ fontWeight: 'bold', marginRight: '10px' }}>Upload file Excel:</label>
+                            {/* Input lắng nghe sự thay đổi handleFileChange */}
+                            <input type="file" onChange={handleFileChange} style={{ padding: '5px' }} accept=".xlsx, .xls" />
+                            <button onClick={handleUpload} style={btnActionStyle('#5e3aff')}>Upload</button>
+                        </div>
+                        <p style={{ fontSize: '0.9rem', color: '#4318ff', margin: '5px 0' }}>
+                            Tên file: <span style={{ fontWeight: '500' }}>{fileName}</span>
+                        </p>
+                        <p style={{ fontSize: '0.9rem', color: '#a3aed0', margin: '5px 0' }}>
+                            Trạng thái: <span style={{ fontWeight: 'bold', color: uploadStatus.includes('Lỗi') ? 'red' : '#05cd99' }}>
+                                [ {uploadStatus} ]
+                            </span>
+                        </p>
                     </div>
 
-                    {/* Khu vực Upload file */}
-                    <div className="card p-4 mb-4 shadow-sm" style={{ border: '1px solid #cbd5e1', borderRadius: '4px' }}>
-                        <div className="d-flex align-items-center mb-3">
-                            <label className="me-3" style={{ fontWeight: '500' }}>Upload file Excel:</label>
-                            <input
-                                type="file"
-                                accept=".xlsx, .xls"
-                                onChange={handleFileChange}
-                                className="form-control w-auto d-inline-block"
-                            />
-                            <button
-                                className="btn-primary ms-3"
-                                onClick={handleUpload}
-                                style={{ padding: '8px 25px', borderRadius: '4px' }}
-                            >
-                                Upload
-                            </button>
-                        </div>
-
-                        <div className="mt-3 pt-3" style={{ borderTop: '1px dashed #cbd5e1' }}>
-                            <p className="mb-2">
-                                Tên file: <span style={{ color: '#4f46e5', fontWeight: 'bold' }}>
-                                    {selectedFile ? selectedFile.name : 'Chưa có file nào được chọn'}
-                                </span>
-                            </p>
-                            <p className="mb-0">
-                                Trạng thái: <span style={{ color: getStatusColor(), fontWeight: 'bold' }}>
-                                    [ {uploadStatus} ]
-                                </span>
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Bảng hiển thị dữ liệu chấm công */}
-                    <div className="card shadow-sm" style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                        <table className="data-table" style={{ marginTop: 0 }}>
-                            <thead style={{ backgroundColor: '#f8fafc' }}>
-                            <tr>
-                                <th>MÃ NV</th>
-                                <th>HỌ TÊN</th>
-                                <th>NGÀY</th>
-                                <th>GIỜ VÀO</th>
-                                <th>TRẠNG THÁI</th>
-                                <th>SỐ TIẾT</th>
+                    {/* BẢNG DỮ LIỆU */}
+                    <div style={tableWrapperStyle}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                            <tr style={{ borderBottom: '2px solid #f4f7fe', textAlign: 'left' }}>
+                                <th style={thStyle}>MÃ NV</th>
+                                <th style={thStyle}>HỌ TÊN</th>
+                                <th style={thStyle}>NGÀY</th>
+                                <th style={thStyle}>GIỜ VÀO</th>
+                                <th style={thStyle}>TRẠNG THÁI</th>
+                                <th style={thStyle}>SỐ TIẾT</th>
                             </tr>
                             </thead>
                             <tbody>
-                            {attendanceData.map((row, index) => (
-                                <tr key={index}>
-                                    <td>{row.id}</td>
-                                    <td style={{ fontWeight: '500' }}>{row.name}</td>
-                                    <td>{row.date}</td>
-                                    <td>{row.checkIn}</td>
-                                    <td>
-                                            <span style={{ color: row.status === 'Trễ' ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
-                                                {row.status}
-                                            </span>
+                            {attendanceList.map((item) => (
+                                <tr key={item.id} style={{ borderBottom: '1px solid #f4f7fe' }}>
+                                    <td style={tdStyle}>NV{item.employeeId}</td>
+                                    <td style={{ ...tdStyle, fontWeight: 'bold' }}>{item.employeeName}</td>
+                                    <td style={tdStyle}>{item.ngayCham}</td>
+                                    <td style={tdStyle}>{item.gioVao}</td>
+                                    <td style={tdStyle}>
+                                        <span style={statusBadge(item.trangThai)}>{item.trangThai}</span>
                                     </td>
-                                    <td className="text-center"><b>{row.periods}</b></td>
+                                    <td style={tdStyle}>{item.soTietDay}</td>
                                 </tr>
                             ))}
                             </tbody>
@@ -130,5 +121,13 @@ function AttendancePage() {
         </div>
     );
 }
+
+// Styles giữ nguyên như bản trước...
+const cardStyle = { backgroundColor: '#fff', padding: '25px', borderRadius: '15px', marginBottom: '25px', border: '1px dashed #cbd5e0' };
+const tableWrapperStyle = { backgroundColor: '#fff', borderRadius: '20px', padding: '20px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' };
+const thStyle = { padding: '15px', color: '#a3aed0', fontSize: '0.85rem', textTransform: 'uppercase' };
+const tdStyle = { padding: '15px', color: '#1b2559', fontSize: '0.95rem' };
+const btnActionStyle = (bg) => ({ padding: '8px 25px', backgroundColor: bg, color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' });
+const statusBadge = (status) => ({ padding: '6px 15px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', backgroundColor: status === 'Đúng giờ' ? '#e6fff5' : '#fff5f5', color: status === 'Đúng giờ' ? '#05cd99' : '#ee5d50' });
 
 export default AttendancePage;

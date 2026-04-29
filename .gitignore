@@ -1,10 +1,34 @@
+# --- IDE & SYSTEM ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+.classpath
+.project
+.settings/
+nbproject/
+*.swp
+*.lock
+
+# --- BACKEND (Java Spring Boot) ---
+target/
+out/
+bin/
+*.class
+*.log
+*.jar
+*.war
+*.ear
+/db/data/
+hs_err_pid*
+.mvn/wrapper/maven-wrapper.jar
+
 # --- FRONTEND (ReactJS) ---
 node_modules/
-/.pnp
-.pnp.js
+build/
+dist/
 /coverage
-/build
-/dist
 .env
 .env.local
 .env.development.local
@@ -13,29 +37,8 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.eslintcache
 
-# --- BACKEND (Java Spring Boot) ---
-target/
-*.class
-bin/
-*.log
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-hs_err_pid*
-.mtj.tmp/
-*.ctxt
-
-# --- IDE & SYSTEM (IntelliJ, VS Code, Windows) ---
-.idea/
-*.iml
-.classpath
-.project
-.settings/
-.vscode/
-.DS_Store
-Thumbs.db
+# --- OTHERS ---
+.pnp
+.pnp.js

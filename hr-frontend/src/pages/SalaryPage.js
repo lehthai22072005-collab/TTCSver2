@@ -1,21 +1,40 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function SalaryPage() {
-    const [isCalculated, setIsCalculated] = useState(false);
-    const [isLocked, setIsLocked] = useState(false);
-    const [showExportModal, setShowExportModal] = useState(false);
-    const [exportFormat, setExportFormat] = useState('excel');
+    const [month, setMonth] = useState('03/2026');
+    const [salaryPreview, setSalaryPreview] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    const salaries = [
-        { id: 'GV001', name: 'Nguyen Van A', workDays: 26, periods: 40, base: '10tr', total: '11tr' },
-        { id: 'NV002', name: 'Tran Thi B', workDays: 24, periods: 35, base: '9tr', total: '9.5tr' }
-    ];
+    const handleCalculate = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get(`http://localhost:8080/api/salary/preview?month=${month}`);
+            setSalaryPreview(res.data);
+        } catch (err) {
+            // Nếu Backend trả về lỗi (400 Bad Request), nó sẽ nhảy vào đây
+            alert(err.response?.data || "Lỗi khi tính lương!");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const handleExport = () => {
-        alert(`Đang xuất file định dạng: ${exportFormat.toUpperCase()}`);
-        setShowExportModal(false);
+    // 2. Chốt lương (LOCK) - Chuyển sang trạng thái đã chi trả
+    const handleLockSalary = async () => {
+        if (salaryPreview.length === 0) return alert("Vui lòng tính lương trước khi chốt!");
+        if (window.confirm(`Xác nhận chốt bảng lương tháng ${month}? Dữ liệu sau khi chốt sẽ không thể sửa đổi.`)) {
+            try {
+                await axios.post(`http://localhost:8080/api/salary/lock?month=${month}`);
+                alert("🔒 Đã chốt lương thành công!");
+                // Chuyển hướng sang trang lịch sử chi trả
+                window.location.href = "/payment-history";
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi khi thực hiện chốt lương!");
+            }
+        }
     };
 
     return (
@@ -23,132 +42,89 @@ function SalaryPage() {
             <Sidebar />
             <div className="main-content">
                 <TopBar />
-                <div className="content-body">
-                    {/* Header chuẩn Wireframe */}
-                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
-                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Tính lương</h2>
-                    </div>
+                <div style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
+                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>TÍNH TOÁN LƯƠNG</h2>
 
-                    <div className="card p-4 mb-4 shadow-sm" style={{ border: '1px solid #cbd5e1' }}>
-                        <div className="mb-4 d-flex align-items-center">
-                            <span className="me-2">Tháng:</span>
-                            <select className="form-select d-inline-block w-auto" style={{ border: '1px solid #000' }}>
-                                <option>03/2026</option>
-                                <option>02/2026</option>
+                    <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
+                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '30px' }}>
+                            <span style={{ color: '#2b3674', fontWeight: '500' }}>Tháng:</span>
+                            <select
+                                value={month}
+                                onChange={(e) => setMonth(e.target.value)}
+                                style={{ padding: '8px 15px', borderRadius: '8px', border: '1px solid #e0e5f2', outline: 'none', color: '#2b3674' }}
+                            >
+                                <option value="03/2026">03/2026</option>
+                                <option value="04/2026">04/2026</option>
+                                <option value="05/2026">05/2026</option>
                             </select>
+
+                            <button
+                                onClick={handleCalculate}
+                                disabled={loading}
+                                style={{ padding: '10px 20px', backgroundColor: '#4318ff', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}
+                            >
+                                {loading ? "Đang xử lý..." : "[ Chạy tính lương ]"}
+                            </button>
+
+                            <button
+                                onClick={handleLockSalary}
+                                style={{ padding: '10px 20px', backgroundColor: '#ee5d50', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                Chốt lương 🔒
+                            </button>
                         </div>
 
-                        <div className="d-flex gap-4">
-                            <button
-                                className="btn-primary"
-                                onClick={() => setIsCalculated(true)}
-                                disabled={isLocked}
-                                style={{ padding: '10px 20px', borderRadius: '4px' }}
-                            >
-                                [ Chạy tính lương ]
-                            </button>
-                            <button
-                                className="btn-secondary"
-                                onClick={() => setShowExportModal(true)}
-                                style={{ padding: '10px 20px', borderRadius: '4px', backgroundColor: '#f1f5f9', color: '#000', border: '1px solid #cbd5e1' }}
-                            >
-                                [ Xuất file đối soát 📄 ]
-                            </button>
+                        <h4 style={{ color: '#2b3674', marginBottom: '20px', fontWeight: 'bold' }}>BẢNG LƯƠNG NHÁP</h4>
+
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                                <thead>
+                                <tr style={{ textAlign: 'left', color: '#a3aed0', borderBottom: '2px solid #f4f7fe' }}>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>MÃ NV</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>HỌ TÊN</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>CÔNG</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>TIẾT DẠY</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>LƯƠNG CB</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>TỔNG LĨNH</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {salaryPreview.length > 0 ? (
+                                    salaryPreview.map((s, i) => (
+                                        <tr key={i} style={{ borderBottom: '1px solid #f4f7fe' }}>
+                                            {/* Hiển thị ID từ employee, fallback về id chính nếu employee null */}
+                                            <td style={{ padding: '15px', color: '#2b3674' }}>NV{s.employee?.id || s.id}</td>
+
+                                            <td style={{ padding: '15px', color: '#2b3674', fontWeight: 'bold' }}>
+                                                {s.employee?.fullName || "N/A"}
+                                            </td>
+
+                                            <td style={{ padding: '15px', color: '#2b3674' }}>{s.ngayCong || 0}</td>
+
+                                            <td style={{ padding: '15px', color: '#2b3674' }}>{s.tietDay || 0}</td>
+
+                                            <td style={{ padding: '15px', color: '#2b3674' }}>
+                                                {(s.luongCoBan || 0).toLocaleString()}đ
+                                            </td>
+
+                                            <td style={{ padding: '15px', color: '#05cd99', fontWeight: 'bold' }}>
+                                                {(s.thucLinh || 0).toLocaleString()}đ
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#a3aed0' }}>
+                                            Chưa có dữ liệu. Vui lòng nhấn nút tính lương.
+                                        </td>
+                                    </tr>
+                                )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-
-                    {isCalculated && (
-                        <div className="mt-4">
-                            <h4 className="mb-3" style={{ fontWeight: 'bold' }}>BẢNG LƯƠNG NHÁP</h4>
-                            <div className="card shadow-sm" style={{ borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                                <table className="data-table" style={{ marginTop: 0 }}>
-                                    <thead style={{ backgroundColor: '#f8fafc' }}>
-                                    <tr>
-                                        <th>Mã NV</th>
-                                        <th>Họ tên</th>
-                                        <th>Công</th>
-                                        <th>Tiết dạy</th>
-                                        <th>Lương</th>
-                                        <th>Tổng</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {salaries.map((s, i) => (
-                                        <tr key={i}>
-                                            <td>{s.id}</td>
-                                            <td>{s.name}</td>
-                                            <td>{s.workDays}</td>
-                                            <td>{s.periods}</td>
-                                            <td>{s.base}</td>
-                                            <td className="text-success"><b>{s.total}</b></td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div className="mt-4 d-flex justify-content-between align-items-center">
-                                <div style={{ fontSize: '24px' }}>{isLocked ? '🔒' : ''}</div>
-                                <button
-                                    className="btn-primary"
-                                    style={{ backgroundColor: isLocked ? '#94a3b8' : '#4f46e5', padding: '10px 30px' }}
-                                    onClick={() => { if(window.confirm("Xác nhận chốt lương?")) setIsLocked(true); }}
-                                    disabled={isLocked}
-                                >
-                                    [ Chốt lương ]
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
-
-            {/* MODAL XUẤT FILE ĐỐI SOÁT - Chuẩn Wireframe */}
-            {showExportModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ width: '400px', border: '2px solid #000', padding: 0 }}>
-                        <h3 style={{ textAlign: 'center', background: '#f8fafc', padding: '15px', borderBottom: '1px solid #000', fontWeight: 'bold' }}>
-                            XUẤT FILE ĐỐI SOÁT
-                        </h3>
-                        <div style={{ padding: '30px' }}>
-                            <p className="mb-3">Định dạng:</p>
-                            <div className="mb-2">
-                                <label style={{ cursor: 'pointer' }}>
-                                    <input
-                                        type="radio"
-                                        name="format"
-                                        checked={exportFormat === 'excel'}
-                                        onChange={() => setExportFormat('excel')}
-                                        className="me-2"
-                                    />
-                                    Excel (.xlsx)
-                                </label>
-                            </div>
-                            <div className="mb-4">
-                                <label style={{ cursor: 'pointer' }}>
-                                    <input
-                                        type="radio"
-                                        name="format"
-                                        checked={exportFormat === 'pdf'}
-                                        onChange={() => setExportFormat('pdf')}
-                                        className="me-2"
-                                    />
-                                    PDF
-                                </label>
-                            </div>
-
-                            <div className="d-flex flex-column gap-2 align-items-center">
-                                <button className="btn-primary w-75" onClick={handleExport}>
-                                    [ Xuất file ]
-                                </button>
-                                <button className="btn-link text-dark" onClick={() => setShowExportModal(false)}>
-                                    [ Hủy ]
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

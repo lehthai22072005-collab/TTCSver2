@@ -15,5 +15,6 @@ public class SystemLog {
     private String userRole;
     private String action;
     private String details;
-    private LocalDateTime timestamp;
+    private String noiDung; // Thêm trường này
+    private LocalDateTime timestamp = LocalDateTime.now();
 }

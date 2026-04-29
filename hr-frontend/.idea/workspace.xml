@@ -5,50 +5,42 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1cf92cbd-a4a6-4683-b76e-007257fc1187" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../hr-backend/.idea/hr-backend.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../hr-backend/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../hr-backend/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/DemoApplication.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/PayrollController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/repository/EmployeeRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/service/PayrollService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/hr-frontend.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/public/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/index.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/AccountManagementPage.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/SystemConfigPage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Director.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Director.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Teacher.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Teacher.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/DemoApplication.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/DemoApplication.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/controller/AuthController.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/controller/AuthController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/dto/LoginRequest.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/dto/LoginRequest.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/dto/LoginResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/dto/LoginResponse.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Accountant.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Accountant.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Admin.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Admin.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Director.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Director.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/AttendanceController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/DashboardController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/ProfileController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Attendance.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Payroll.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/repository/AttendanceRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/repository/PayrollRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/DashboardAccountant.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/PaymentDetailPage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/EmployeeController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/EmployeeController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/PayrollController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/controller/PayrollController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Employee.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/Employee.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/SystemLog.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/entity/SystemLog.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/repository/AccountantRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/repository/AccountantRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/repository/SystemLogRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/repository/SystemLogRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/service/PayrollService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/src/main/java/com/ptit/demo/service/PayrollService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/controller/EmployeeController.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/controller/EmployeeController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/controller/PayrollController.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/controller/PayrollController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Employee.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Employee.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/LeaveRequest.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/LeaveRequest.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/SystemLog.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/SystemLog.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Teacher.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/entity/Teacher.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/repository/AccountantRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/repository/AccountantRepository.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/service/PayrollService.class" beforeDir="false" afterPath="$PROJECT_DIR$/../hr-backend/target/classes/com/ptit/demo/service/PayrollService.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Sidebar.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Sidebar.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/ApprovalsPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/ApprovalsPage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/AttendancePage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/AttendancePage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/DashboardPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/DashboardPage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/EmployeePage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/EmployeePage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/HrReportsPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/HrReportsPage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/LeaveRequestPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/LeaveRequestPage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/MySalaryPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/MySalaryPage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/PaymentHistoryPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/PaymentHistoryPage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/ProfilePage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/ProfilePage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/ReportsPage.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/SalaryFundPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/SalaryFundPage.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/SalaryPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/SalaryPage.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/SystemLogPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/SystemLogPage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/SystemConfigPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/SystemConfigPage.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,28 +60,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/Asus/Documents/TTCS/TTCS/hr-frontend",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_interpreter_path": "node",
-    "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\IntelliJ IDEA 2026.1\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Asus/Documents/TTCS/TTCS/hr-frontend&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_interpreter_path&quot;: &quot;node&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\IntelliJ IDEA 2026.1\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Asus\Documents\TTCS\TTCS\hr-frontend\src" />
