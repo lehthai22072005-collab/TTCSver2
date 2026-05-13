@@ -2,6 +2,8 @@ package com.ptit.demo.service;
 
 import com.ptit.demo.entity.Employee;
 import com.ptit.demo.entity.Payroll;
+import com.ptit.demo.repository.PayrollRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -9,8 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@SuppressWarnings("SpellCheckingInspection") // Tắt cảnh báo typo tiếng Việt
 public class PayrollService {
+
+    @Autowired
+    private PayrollRepository payrollRepository;
+
     private static final BigDecimal BHXH_RATE = new BigDecimal("0.105");
     private static final BigDecimal TAX_FREE_THRESHOLD = new BigDecimal("11000000");
 
@@ -29,28 +34,44 @@ public class PayrollService {
 
     public List<Payroll> calculateForAll(String month, List<Employee> employees) {
         List<Payroll> payrollList = new ArrayList<>();
-        BigDecimal defaultBaseSalary = new BigDecimal("10000000");
         BigDecimal pricePerPeriod = new BigDecimal("150000");
 
+        // Chuyển MM/YYYY -> YYYY-MM-% để query LIKE trong SQL
+        String[] parts = month.split("/");
+        String monthPattern = parts[1] + "-" + parts[0] + "-%";
+
         for (Employee emp : employees) {
+            // Lấy dữ liệu chấm công thực tế
+            int workDays = payrollRepository.countWorkDays(emp.getId(), monthPattern);
+            Integer totalPeriods = payrollRepository.sumTeachingPeriods(emp.getId(), monthPattern);
+            int periods = (totalPeriods != null) ? totalPeriods : 0;
+
+            // BƯỚC CHẶN: Nếu nhân viên không có bất kỳ ngày công hay tiết dạy nào thì không tạo lương
+            if (workDays == 0 && periods == 0) {
+                continue;
+            }
+
             Payroll p = new Payroll();
             p.setEmployee(emp);
             p.setThangNam(month);
             p.setTrangThaiChot(false);
 
-            // Giả lập số liệu khớp với tài liệu thiết kế của bạn
-            int workDays = (emp.getId() != null && emp.getId() == 1) ? 26 : 24;
-            int periods = (emp.getId() != null && emp.getId() == 1) ? 40 : 35;
+            BigDecimal actualBaseSalary = (emp.getBaseSalary() != null) ? emp.getBaseSalary() : new BigDecimal("10000000");
+            BigDecimal net = calculateNetSalary(actualBaseSalary, periods, pricePerPeriod);
 
-            BigDecimal net = calculateNetSalary(defaultBaseSalary, periods, pricePerPeriod);
-
-            p.setLuongCoBan(defaultBaseSalary);
+            p.setLuongCoBan(actualBaseSalary);
             p.setThucLinh(net);
-            p.setNgayCong(workDays); // Đã hết lỗi setNgayCong
-            p.setTietDay(periods);   // Đã hết lỗi setTietDay
+            p.setNgayCong(workDays);
+            p.setTietDay(periods);
 
             payrollList.add(p);
         }
+
+        // Nếu cả danh sách trống (không ai có chấm công)
+        if (payrollList.isEmpty()) {
+            throw new RuntimeException("Dữ liệu chấm công tháng " + month + " trống. Không thể tính lương!");
+        }
+
         return payrollList;
     }
 }

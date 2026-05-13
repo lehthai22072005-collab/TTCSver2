@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -28,13 +29,16 @@ public class Employee {
 
     private String position;
 
-
+    // ĐÃ THÊM: Lương cơ bản gốc của nhân viên
+    @Column(name = "base_salary")
+    @JsonProperty("baseSalary")
+    private BigDecimal baseSalary;
 
     @Column(name = "academic_degree")
-    @JsonProperty("academicDegree") // Ép tên key JSON trả về Frontend
+    @JsonProperty("academicDegree")
     private String academicDegree;
 
     @Column(name = "contract_end_date")
-    @JsonProperty("contractEndDate") // Ép tên key JSON trả về Frontend
+    @JsonProperty("contractEndDate")
     private LocalDate contractEndDate;
 }
