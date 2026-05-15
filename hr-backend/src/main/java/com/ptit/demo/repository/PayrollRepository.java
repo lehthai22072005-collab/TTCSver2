@@ -11,17 +11,18 @@ public interface PayrollRepository extends JpaRepository<Payroll, Long> {
     List<Payroll> findByTrangThaiChotTrue();
     List<Payroll> findByThangNam(String month);
 
+    // THÊM MỚI: Lấy danh sách phiếu lương của 1 nhân viên cụ thể
+    List<Payroll> findByEmployeeId(Long employeeId);
+
     boolean existsByThangNamAndTrangThaiChotTrue(String month);
 
     @Transactional
     void deleteByThangNamAndTrangThaiChotFalse(String month);
 
-    // Đếm số ngày đi làm thực tế
     @Query(value = "SELECT COUNT(*) FROM cham_cong WHERE employee_id = :empId " +
             "AND ngay_cham LIKE :monthPattern AND co_di_lam = true", nativeQuery = true)
     int countWorkDays(@Param("empId") Long empId, @Param("monthPattern") String monthPattern);
 
-    // Tính tổng số tiết dạy
     @Query(value = "SELECT SUM(so_tiet_day) FROM cham_cong WHERE employee_id = :empId " +
             "AND ngay_cham LIKE :monthPattern", nativeQuery = true)
     Integer sumTeachingPeriods(@Param("empId") Long empId, @Param("monthPattern") String monthPattern);

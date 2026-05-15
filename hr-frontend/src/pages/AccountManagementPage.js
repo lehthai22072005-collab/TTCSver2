@@ -1,54 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function AccountManagementPage() {
-    const [searchTerm, setSearchTerm] = useState('');
+    const [accounts, setAccounts] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [mode, setMode] = useState('ADD'); // ADD hoặc EDIT
+    const [isEditMode, setIsEditMode] = useState(false);
 
-    // Dữ liệu mẫu
-    const [users, setUsers] = useState([
-        { id: 1, username: 'thai', fullName: 'Lê Thái', email: 'thai@gmail.com', role: 'Admin', status: 'Active' },
-        { id: 2, username: 'nam', fullName: 'Nguyễn Nam', email: 'nam@gmail.com', role: 'Kế toán', status: 'Locked' },
-        { id: 3, username: 'linh', fullName: 'Trần Linh', email: 'linh@gmail.com', role: 'Nhân viên', status: 'Active' }
-    ]);
-
-    const [selectedUser, setSelectedUser] = useState({
+    // Form data
+    const [formData, setFormData] = useState({
+        oldUsername: '', oldRole: '',
         username: '', fullName: '', email: '', password: '', role: 'Admin', status: 'Active'
     });
 
-    // Mở Modal (Tạo mới hoặc Chỉnh sửa)
-    const openModal = (actionMode, user = null) => {
-        setMode(actionMode);
-        if (user) {
-            setSelectedUser({ ...user, password: '***' }); // Giả lập pass khi edit
+    // 1. Fetch dữ liệu khi load trang
+    const fetchAccounts = async () => {
+        try {
+            const res = await axios.get('http://localhost:8080/api/accounts/list');
+            setAccounts(res.data);
+        } catch (err) {
+            console.error("Lỗi lấy danh sách tài khoản:", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchAccounts();
+    }, []);
+
+    // 2. Mở Modal
+    const handleOpenModal = (account = null) => {
+        if (account) {
+            setIsEditMode(true);
+            setFormData({
+                oldUsername: account.username, oldRole: account.role,
+                username: account.username, fullName: account.fullName, email: account.email,
+                password: '', // Để trống password khi edit, nếu nhập mới update
+                role: account.role, status: account.status
+            });
         } else {
-            setSelectedUser({ username: '', fullName: '', email: '', password: '', role: 'Admin', status: 'Active' });
+            setIsEditMode(false);
+            setFormData({
+                oldUsername: '', oldRole: '',
+                username: '', fullName: '', email: '', password: '', role: 'Admin', status: 'Active'
+            });
         }
         setShowModal(true);
     };
 
-    // Xử lý Lock/Unlock
-    const toggleLock = (id) => {
-        const updatedUsers = users.map(user => {
-            if (user.id === id) {
-                return { ...user, status: user.status === 'Active' ? 'Locked' : 'Active' };
-            }
-            return user;
-        });
-        setUsers(updatedUsers);
-    };
-
-    // Xử lý Lưu (Save)
-    const handleSave = () => {
-        if (mode === 'ADD') {
-            const newUser = { ...selectedUser, id: users.length + 1 };
-            setUsers([...users, newUser]);
-        } else {
-            setUsers(users.map(u => u.id === selectedUser.id ? selectedUser : u));
+    // 3. Lưu (Create hoặc Update)
+    const handleSave = async () => {
+        try {
+            const endpoint = isEditMode ? '/update' : '/create';
+            await axios.post(`http://localhost:8080/api/accounts${endpoint}`, formData);
+            alert(isEditMode ? "Cập nhật thành công!" : "Tạo mới thành công!");
+            setShowModal(false);
+            fetchAccounts(); // Load lại bảng
+        } catch (err) {
+            // Dòng này sẽ lấy đúng lỗi từ Backend (ví dụ: Thiếu cột status, trùng email...) hiển thị lên
+            alert(err.response?.data?.message || "Có lỗi xảy ra!");
+            console.error(err);
         }
-        setShowModal(false);
+    };
+    // 4. Nút Khóa/Mở khóa nhanh
+    const handleToggleStatus = async (account) => {
+        if(window.confirm(`Bạn có chắc muốn ${account.status === 'Active' ? 'khóa' : 'mở khóa'} user ${account.username}?`)) {
+            try {
+                await axios.post('http://localhost:8080/api/accounts/toggle-status', {
+                    username: account.username,
+                    role: account.role,
+                    status: account.status
+                });
+                fetchAccounts();
+            } catch (err) {
+                console.error("Lỗi đổi trạng thái:", err);
+            }
+        }
     };
 
     return (
@@ -56,50 +83,41 @@ function AccountManagementPage() {
             <Sidebar />
             <div className="main-content">
                 <TopBar />
-                <div className="content-body">
-                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
-                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Quản lý tài khoản</h2>
-                    </div>
+                <div className="content-body" style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
+                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>QUẢN LÝ TÀI KHOẢN</h2>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-                        <input
-                            type="text"
-                            placeholder="[ Tìm kiếm 🔍 ]"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{ width: '300px', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                        />
-                        <button className="btn-primary" onClick={() => openModal('ADD')}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                        <input type="text" placeholder="[ Tìm kiếm 🔍 ]" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', width: '300px' }} />
+                        <button onClick={() => handleOpenModal()} style={{ backgroundColor: '#4318ff', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
                             [ + Tạo User ]
                         </button>
                     </div>
 
-                    <div className="card shadow-sm">
-                        <table className="data-table">
+                    {/* BẢNG DỮ LIỆU */}
+                    <div style={{ backgroundColor: '#fff', borderRadius: '15px', padding: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th style={{ textAlign: 'center' }}>Action</th>
+                            <tr style={{ borderBottom: '2px solid #f4f7fe', color: '#a3aed0' }}>
+                                <th style={{ padding: '15px' }}>STT</th>
+                                <th>USERNAME</th>
+                                <th>HỌ VÀ TÊN</th>
+                                <th>ROLE</th>
+                                <th>STATUS</th>
+                                <th>ACTION</th>
                             </tr>
                             </thead>
                             <tbody>
-                            {users.filter(u => u.username.includes(searchTerm)).map((user) => (
-                                <tr key={user.id}>
-                                    <td>{user.id}</td>
-                                    <td className="font-bold">{user.username}</td>
-                                    <td>{user.role}</td>
+                            {accounts.map((acc, index) => (
+                                <tr key={index} style={{ borderBottom: '1px solid #f4f7fe', color: '#2b3674', fontWeight: '500' }}>
+                                    <td style={{ padding: '15px' }}>{index + 1}</td>
+                                    <td>{acc.username}</td>
+                                    <td>{acc.fullName}</td>
+                                    <td>{acc.role}</td>
+                                    <td style={{ color: acc.status === 'Active' ? '#05cd99' : '#e53e3e' }}>{acc.status}</td>
                                     <td>
-                                            <span style={{ fontWeight: 'bold', color: user.status === 'Active' ? '#10b981' : '#ef4444' }}>
-                                                {user.status}
-                                            </span>
-                                    </td>
-                                    <td style={{ textAlign: 'center' }}>
-                                        <button onClick={() => openModal('EDIT', user)} style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>[Edit]</button>
-                                        <button onClick={() => toggleLock(user.id)} style={{ color: user.status === 'Active' ? '#ef4444' : '#10b981', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                                            {user.status === 'Active' ? '[Lock]' : '[Unlock]'}
+                                        <button onClick={() => handleOpenModal(acc)} style={{ color: '#4318ff', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>[Edit]</button>
+                                        <button onClick={() => handleToggleStatus(acc)} style={{ color: acc.status === 'Active' ? '#e53e3e' : '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                            [{acc.status === 'Active' ? 'Lock' : 'Unlock'}]
                                         </button>
                                     </td>
                                 </tr>
@@ -107,59 +125,61 @@ function AccountManagementPage() {
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
 
-            {/* MODAL CREATE/EDIT USER - Chuẩn Wireframe */}
-            {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ width: '500px', border: '2px solid #000', padding: 0 }}>
-                        <h3 style={{ textAlign: 'center', background: '#f8fafc', padding: '15px', borderBottom: '1px solid #000', fontWeight: 'bold', margin: 0 }}>
-                            {mode === 'ADD' ? 'CREATE USER' : 'EDIT USER'}
-                        </h3>
-                        <div style={{ padding: '30px' }}>
-                            <div className="form-group mb-3" style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                                <label>Username:</label>
-                                <input type="text" value={selectedUser.username} onChange={e => setSelectedUser({...selectedUser, username: e.target.value})} style={{ borderBottom: '1px solid #000', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }} />
-                            </div>
-                            <div className="form-group mb-3" style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                                <label>Họ và tên:</label>
-                                <input type="text" value={selectedUser.fullName} onChange={e => setSelectedUser({...selectedUser, fullName: e.target.value})} style={{ borderBottom: '1px solid #000', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }} />
-                            </div>
-                            <div className="form-group mb-3" style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                                <label>Email:</label>
-                                <input type="email" value={selectedUser.email} onChange={e => setSelectedUser({...selectedUser, email: e.target.value})} style={{ borderBottom: '1px solid #000', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }} />
-                            </div>
-                            <div className="form-group mb-3" style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                                <label>Password:</label>
-                                <input type="password" value={selectedUser.password} onChange={e => setSelectedUser({...selectedUser, password: e.target.value})} style={{ borderBottom: '1px solid #000', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }} />
-                            </div>
-                            <div className="form-group mb-3" style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                                <label>Role:</label>
-                                <select value={selectedUser.role} onChange={e => setSelectedUser({...selectedUser, role: e.target.value})}>
-                                    <option>Admin</option>
-                                    <option>Kế toán</option>
-                                    <option>Nhân viên</option>
-                                </select>
-                            </div>
-                            <div className="form-group mb-4" style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                                <label>Status:</label>
-                                <select value={selectedUser.status} onChange={e => setSelectedUser({...selectedUser, status: e.target.value})}>
-                                    <option>Active</option>
-                                    <option>Locked</option>
-                                </select>
-                            </div>
+                    {/* MODAL TẠO/SỬA */}
+                    {showModal && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '15px', width: '400px' }}>
+                                <h3 style={{ textAlign: 'center', marginBottom: '20px', color: '#1b2559' }}>
+                                    {isEditMode ? 'EDIT USER' : 'CREATE USER'}
+                                </h3>
 
-                            <div className="d-flex justify-content-center gap-4">
-                                <button className="btn-primary" onClick={handleSave} style={{ padding: '10px 40px' }}>[ Save ]</button>
-                                <button className="btn-secondary" onClick={() => setShowModal(false)} style={{ padding: '10px 40px', background: 'none', border: 'none', color: '#000' }}>[ Cancel ]</button>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Username:</label>
+                                    <input type="text" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} style={inputStyle} />
+                                </div>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Họ và tên:</label>
+                                    <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} style={inputStyle} />
+                                </div>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Email:</label>
+                                    <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={inputStyle} />
+                                </div>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Password: {isEditMode && <span style={{fontSize:'12px', color:'gray'}}>(Bỏ trống nếu không đổi)</span>}</label>
+                                    <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} style={inputStyle} />
+                                </div>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Role:</label>
+                                    <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} style={inputStyle}>
+                                        <option value="Admin">Admin</option>
+                                        <option value="Kế toán">Kế toán</option>
+                                        <option value="Nhân viên">Nhân viên</option>
+                                        <option value="Ban Giám Hiệu">Ban Giám Hiệu</option>
+                                    </select>
+                                </div>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Status:</label>
+                                    <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={inputStyle}>
+                                        <option value="Active">Active</option>
+                                        <option value="Locked">Locked</option>
+                                    </select>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                                    <button onClick={handleSave} style={{ backgroundColor: '#4318ff', color: 'white', padding: '10px 30px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>[ Save ]</button>
+                                    <button onClick={() => setShowModal(false)} style={{ backgroundColor: 'transparent', color: '#1b2559', padding: '10px 30px', borderRadius: '8px', border: '1px solid #1b2559', cursor: 'pointer', fontWeight: 'bold' }}>[ Cancel ]</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }
+
+const inputStyle = { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none' };
 
 export default AccountManagementPage;

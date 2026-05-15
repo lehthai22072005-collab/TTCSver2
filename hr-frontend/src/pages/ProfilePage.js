@@ -5,48 +5,84 @@ import TopBar from '../components/TopBar';
 
 function ProfilePage() {
     const [userProfile, setUserProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [errorMsg, setErrorMsg] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editData, setEditData] = useState({ fullName: '', email: '', phone: '' });
 
-    const currentUsername = localStorage.getItem("username") || "Hong_Thai";
+    const currentUsername = localStorage.getItem("username") || "";
+    const currentRole = localStorage.getItem("role") || "";
 
     const fetchProfile = async () => {
+        if (!currentUsername || !currentRole) {
+            setErrorMsg("Không tìm thấy thông tin đăng nhập trong hệ thống!");
+            setLoading(false);
+            return;
+        }
+
         try {
-            const res = await axios.get(`http://localhost:8080/api/profile/${currentUsername}`);
+            const res = await axios.get(`http://localhost:8080/api/profile/${currentRole}/${currentUsername}`);
             setUserProfile(res.data);
-            // Cập nhật dữ liệu vào form chỉnh sửa
+
             setEditData({
-                fullName: res.data.fullName,
-                email: res.data.email,
-                phone: res.data.phone
+                fullName: res.data.fullName || '',
+                email: res.data.email || '',
+                phone: res.data.phone || ''
             });
+            setLoading(false);
         } catch (err) {
-            console.error("Lỗi lấy thông tin:", err);
+            console.error("Chi tiết lỗi API:", err);
+            // SỬA TẠI ĐÂY: Hiển thị đích danh lỗi từ Spring Boot trả về
+            const backendError = err.response?.data || err.message;
+            setErrorMsg(`LỖI BACKEND: ${backendError}. Vui lòng kiểm tra Console của Spring Boot!`);
+            setLoading(false);
         }
     };
 
-    useEffect(() => { fetchProfile(); }, [currentUsername]);
+    useEffect(() => {
+        fetchProfile();
+    }, [currentUsername, currentRole]);
 
-    // HÀM XỬ LÝ LƯU THÔNG TIN MỚI
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            // Gọi API Update của nhân viên (sử dụng ID của profile hiện tại)
             await axios.put(`http://localhost:8080/api/employees/${userProfile.id}`, {
-                ...userProfile, // Giữ lại các trường cũ (phòng ban, chức vụ...)
+                ...userProfile,
                 fullName: editData.fullName,
                 email: editData.email,
                 phone: editData.phone
             });
-            alert("✅ Đã cập nhật thông tin cá nhân thành công!");
+            alert("✅ Cập nhật thành công!");
             setShowModal(false);
-            fetchProfile(); // Tải lại dữ liệu mới
+            fetchProfile();
         } catch (err) {
             alert("❌ Lỗi cập nhật: " + err.message);
         }
     };
 
-    if (!userProfile) return <div style={{padding: '50px', textAlign: 'center'}}>Đang tải...</div>;
+    if (loading) {
+        return (
+            <div className="dashboard-layout">
+                <Sidebar /><div className="main-content"><TopBar />
+                <div style={{padding: '50px', textAlign: 'center', fontSize: '1.2rem', color: '#4318ff', fontWeight: 'bold'}}>⏳ Đang tải dữ liệu hồ sơ...</div>
+            </div>
+            </div>
+        );
+    }
+
+    if (errorMsg) {
+        return (
+            <div className="dashboard-layout">
+                <Sidebar /><div className="main-content"><TopBar />
+                <div style={{padding: '40px'}}>
+                    <div style={{padding: '20px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '15px', border: '2px solid #ef4444', fontWeight: 'bold', fontSize: '1.1rem'}}>
+                        {errorMsg}
+                    </div>
+                </div>
+            </div>
+            </div>
+        );
+    }
 
     return (
         <div className="dashboard-layout">
@@ -69,7 +105,7 @@ function ProfilePage() {
 
                         <div style={infoGridStyle}>
                             <div style={infoItemStyle}>
-                                <label style={labelStyle}>Mã nhân viên</label>
+                                <label style={labelStyle}>Mã nhân sự</label>
                                 <div style={valueStyle}>NV{userProfile.id}</div>
                             </div>
                             <div style={infoItemStyle}>
@@ -84,17 +120,24 @@ function ProfilePage() {
                                 <label style={labelStyle}>Số điện thoại</label>
                                 <div style={valueStyle}>{userProfile.phone}</div>
                             </div>
+                            <div style={infoItemStyle}>
+                                <label style={labelStyle}>Phòng ban / Khoa</label>
+                                <div style={valueStyle}>{userProfile.department || 'N/A'}</div>
+                            </div>
+                            <div style={infoItemStyle}>
+                                <label style={labelStyle}>Bằng cấp chuyên môn</label>
+                                <div style={valueStyle}>{userProfile.academicDegree || 'N/A'}</div>
+                            </div>
                         </div>
 
                         <div style={{ textAlign: 'right', padding: '0 40px 40px 0' }}>
-                            {/* KÍCH HOẠT NÚT CHỈNH SỬA */}
                             <button onClick={() => setShowModal(true)} style={btnEditStyle}>Chỉnh sửa thông tin</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* MODAL CHỈNH SỬA THÔNG TIN NHANH */}
+            {/* MODAL */}
             {showModal && (
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ width: '450px', borderRadius: '20px' }}>
@@ -102,27 +145,15 @@ function ProfilePage() {
                         <form onSubmit={handleUpdate}>
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={modalLabel}>Họ và tên:</label>
-                                <input
-                                    style={modalInput}
-                                    value={editData.fullName}
-                                    onChange={e => setEditData({...editData, fullName: e.target.value})}
-                                />
+                                <input style={modalInput} value={editData.fullName} onChange={e => setEditData({...editData, fullName: e.target.value})} />
                             </div>
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={modalLabel}>Email:</label>
-                                <input
-                                    style={modalInput}
-                                    value={editData.email}
-                                    onChange={e => setEditData({...editData, email: e.target.value})}
-                                />
+                                <input style={modalInput} value={editData.email} onChange={e => setEditData({...editData, email: e.target.value})} />
                             </div>
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={modalLabel}>Số điện thoại:</label>
-                                <input
-                                    style={modalInput}
-                                    value={editData.phone}
-                                    onChange={e => setEditData({...editData, phone: e.target.value})}
-                                />
+                                <input style={modalInput} value={editData.phone} onChange={e => setEditData({...editData, phone: e.target.value})} />
                             </div>
                             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                                 <button type="submit" style={btnSaveStyle}>Lưu thay đổi</button>
@@ -136,7 +167,6 @@ function ProfilePage() {
     );
 }
 
-// --- CSS Styles ---
 const profileCardStyle = { backgroundColor: '#fff', borderRadius: '25px', overflow: 'hidden', boxShadow: '0px 20px 50px rgba(112, 144, 176, 0.15)' };
 const headerStyle = { background: 'linear-gradient(90deg, #4318ff 0%, #5e3aff 100%)', padding: '50px 40px', color: '#fff', display: 'flex', alignItems: 'center' };
 const avatarStyle = { width: '90px', height: '90px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '2.5rem', fontWeight: 'bold', border: '3px solid #fff' };

@@ -23,20 +23,16 @@ public class PayrollController {
     @GetMapping("/preview")
     public ResponseEntity<?> previewSalary(@RequestParam String month) {
         if (payrollRepository.existsByThangNamAndTrangThaiChotTrue(month)) {
-            return ResponseEntity.badRequest().body("Tháng " + month + " đã được chốt lương chính thức. Không thể tính lại!");
+            return ResponseEntity.badRequest().body("Tháng " + month + " đã được chốt lương. Không thể tính lại!");
         }
 
         try {
             var employees = employeeRepository.findAll();
             List<Payroll> payrollList = payrollService.calculateForAll(month, employees);
-
-            // Xóa nháp cũ và lưu bản mới tính theo chấm công thực tế
             payrollRepository.deleteByThangNamAndTrangThaiChotFalse(month);
             payrollRepository.saveAll(payrollList);
-
             return ResponseEntity.ok(payrollList);
         } catch (RuntimeException e) {
-            // Trả về lỗi nếu không có dữ liệu chấm công để Frontend hiện Alert
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -46,7 +42,6 @@ public class PayrollController {
         if (payrollRepository.existsByThangNamAndTrangThaiChotTrue(month)) {
             return ResponseEntity.badRequest().body("Tháng " + month + " đã chốt rồi!");
         }
-
         List<Payroll> payrolls = payrollRepository.findByThangNam(month);
         if (payrolls.isEmpty()) return ResponseEntity.status(404).body("Không có dữ liệu nháp!");
 
@@ -66,5 +61,12 @@ public class PayrollController {
     @GetMapping("/detail")
     public ResponseEntity<?> getPaymentDetail(@RequestParam String month) {
         return ResponseEntity.ok(payrollRepository.findByThangNam(month));
+    }
+
+    // THÊM MỚI: API cho trang Phiếu lương của cá nhân (Giảng viên/Nhân viên)
+    @GetMapping("/my-salary/{empId}")
+    public ResponseEntity<?> getMySalary(@PathVariable Long empId) {
+        List<Payroll> myPayrolls = payrollRepository.findByEmployeeId(empId);
+        return ResponseEntity.ok(myPayrolls);
     }
 }
