@@ -161,15 +161,14 @@ INSERT INTO accountant (username, password, employee_id) VALUES ('kt_hai', '1234
 INSERT INTO admin (username, password, employee_id) VALUES ('admin_thai', '123456', 4);
 
 
+-- 1. Thêm cột contract_start_date vào bảng employee
+ALTER TABLE employee ADD COLUMN contract_start_date DATE AFTER academic_degree;
 
--- Bơm dữ liệu đi làm cho tháng 03 và 04 để test
-INSERT INTO cham_cong (employee_id, ngay_cham, gio_vao, trang_thai, so_tiet_day, co_di_lam) VALUES 
-(1, '2026-03-05', '07:55:00', 'Đúng giờ', 4, TRUE),
-(1, '2026-03-06', '07:55:00', 'Đúng giờ', 4, TRUE),
-(1, '2026-03-07', '07:55:00', 'Đúng giờ', 4, TRUE),
-(2, '2026-03-05', '08:00:00', 'Đúng giờ', 0, TRUE),
-(3, '2026-03-05', '08:00:00', 'Đúng giờ', 0, TRUE),
-(4, '2026-03-05', '08:00:00', 'Đúng giờ', 0, TRUE),
+-- 2. Cập nhật lại ngày Bắt đầu và Kết thúc cho 4 nhân sự gốc
+-- Người 1, 2, 3: Bắt đầu tháng 1/2026, hợp đồng 2 năm
+UPDATE employee SET contract_start_date = '2026-01-05', contract_end_date = '2028-01-05' WHERE id = 1;
+UPDATE employee SET contract_start_date = '2026-01-10', contract_end_date = '2028-01-10' WHERE id = 2;
+UPDATE employee SET contract_start_date = '2026-02-15', contract_end_date = '2028-02-15' WHERE id = 3;
 
-(1, '2026-04-10', '07:55:00', 'Đúng giờ', 4, TRUE),
-(2, '2026-04-10', '08:00:00', 'Đúng giờ', 0, TRUE);
+-- Người 4 (Admin): Hợp đồng 1 năm, bắt đầu từ 2025, kết thúc vào Tháng 3/2026 (Đã hết hạn để tạo biểu đồ Thôi việc)
+UPDATE employee SET contract_start_date = '2025-03-10', contract_end_date = '2026-03-10' WHERE id = 4;
