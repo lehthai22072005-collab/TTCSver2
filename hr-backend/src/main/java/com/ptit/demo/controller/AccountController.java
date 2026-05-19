@@ -32,30 +32,40 @@ public class AccountController {
         }
     }
 
-    // 1. LẤY DANH SÁCH (Đã fix lỗi trống danh sách do map sai key)
+    // 1. LẤY DANH SÁCH (Đã nâng cấp: Lấy toàn bộ nhân viên, ai chưa có tài khoản sẽ báo trống)
     @GetMapping("/list")
     public ResponseEntity<?> getAllAccounts() {
         try {
+            // Sử dụng LEFT JOIN từ bảng employee để không bỏ sót bất kỳ nhân sự nào (như bác Bảo vệ)
             String sql =
-                    "SELECT a.username, e.full_name, e.email, 'Admin' as role, a.status " +
-                            "FROM admin a JOIN employee e ON a.employee_id = e.id " +
-                            "UNION ALL " +
-                            "SELECT c.username, e.full_name, e.email, 'Kế toán' as role, c.status " +
-                            "FROM accountant c JOIN employee e ON c.employee_id = e.id " +
-                            "UNION ALL " +
-                            "SELECT s.username, e.full_name, e.email, 'Nhân viên' as role, s.status " +
-                            "FROM staff s JOIN employee e ON s.employee_id = e.id " +
-                            "UNION ALL " +
-                            "SELECT b.username, e.full_name, e.email, 'Ban Giám Hiệu' as role, b.status " +
-                            "FROM ban_giam_hieu b JOIN employee e ON b.employee_id = e.id";
+                    "SELECT e.full_name, e.email, " +
+                            "COALESCE(a.username, c.username, s.username, b.username) as username, " +
+                            "CASE " +
+                            "WHEN a.username IS NOT NULL THEN 'Admin' " +
+                            "WHEN c.username IS NOT NULL THEN 'Kế toán' " +
+                            "WHEN b.username IS NOT NULL THEN 'Ban Giám Hiệu' " +
+                            "WHEN s.username IS NOT NULL THEN 'Nhân viên' " +
+                            "ELSE 'Chưa cấp quyền' " +
+                            "END as role, " +
+                            "COALESCE(a.status, c.status, s.status, b.status, 'No Account') as status " +
+                            "FROM employee e " +
+                            "LEFT JOIN admin a ON e.id = a.employee_id " +
+                            "LEFT JOIN accountant c ON e.id = c.employee_id " +
+                            "LEFT JOIN staff s ON e.id = s.employee_id " +
+                            "LEFT JOIN ban_giam_hieu b ON e.id = b.employee_id";
 
             List<Map<String, Object>> accounts = jdbcTemplate.query(sql, (rs, rowNum) -> {
                 Map<String, Object> map = new HashMap<>();
-                map.put("username", rs.getString("username"));
+
+                String username = rs.getString("username");
+                map.put("username", username != null ? username : "[ Chưa có tài khoản ]");
                 map.put("fullName", rs.getString("full_name"));
                 map.put("email", rs.getString("email"));
                 map.put("role", rs.getString("role"));
-                map.put("status", rs.getString("status"));
+
+                String status = rs.getString("status");
+                map.put("status", status.equals("No Account") ? "Chưa kích hoạt" : status);
+
                 return map;
             });
             return ResponseEntity.ok(accounts);
@@ -65,26 +75,29 @@ public class AccountController {
         }
     }
 
-    // 2. TẠO TÀI KHOẢN MỚI (Đã bọc Try-Catch để báo lỗi rõ ràng)
+    // 2. TẠO TÀI KHOẢN MỚI (Đã fix lỗi NullPointer cho nhân viên mới)
     @PostMapping("/create")
     public ResponseEntity<?> createAccount(@RequestBody Map<String, String> data) {
         try {
-            Employee emp = new Employee();
-            emp.setFullName(data.get("fullName"));
-            emp.setEmail(data.get("email"));
-            emp = employeeRepository.save(emp);
+            // Lấy employee_id từ request (bạn cần gửi kèm employeeId từ phía Frontend)
+            String empIdStr = data.get("employeeId");
+            if (empIdStr == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Thiếu ID nhân viên!"));
+            }
 
+            Long empId = Long.parseLong(empIdStr);
             String table = getTableName(data.get("role"));
-            String sql = "INSERT INTO " + table + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)";
-            jdbcTemplate.update(sql, data.get("username"), data.get("password"), emp.getId(), data.get("status"));
 
-            return ResponseEntity.ok(Map.of("message", "Tạo tài khoản thành công!"));
+            // Câu lệnh INSERT trực tiếp
+            String sql = "INSERT INTO " + table + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)";
+            jdbcTemplate.update(sql, data.get("username"), data.get("password"), empId, "Active");
+
+            return ResponseEntity.ok(Map.of("message", "Cấp tài khoản thành công!"));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo User: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi cấp tài khoản: " + e.getMessage()));
         }
     }
-
     // 3. SỬA TÀI KHOẢN
     @PostMapping("/update")
     public ResponseEntity<?> updateAccount(@RequestBody Map<String, String> data) {

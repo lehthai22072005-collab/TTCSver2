@@ -26,8 +26,8 @@ import SystemLogPage from './pages/SystemLogPage';
 import LeaveRequestPage from './pages/LeaveRequestPage';
 import LeaveManagementPage from './pages/LeaveManagementPage';
 import ApprovalsPage from './pages/ApprovalsPage';
-import HrReportsPage from './pages/HrReportsPage';
-import SalaryFundPage from './pages/SalaryFundPage';
+import HrReportsPage from './pages/HRReportsPage';
+import SalaryFundPage from './pages/SalaryFluctuationPage';
 import SystemConfigPage from './pages/SystemConfigPage';
 import PaymentDetailPage from './pages/PaymentDetailPage';
 

@@ -1,14 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function DashboardDirector() {
-    // Dữ liệu giả lập cho BGH nhìn tổng quan
-    const dataGrowth = [
-        { name: 'T1', nhanSu: 40 }, { name: 'T2', nhanSu: 42 },
-        { name: 'T3', nhanSu: 45 }, { name: 'T4', nhanSu: 48 },
-    ];
+    const userName = localStorage.getItem('username') || 'Giám đốc';
+
+    // State lưu trữ dữ liệu đồng bộ từ Database
+    const [directorStats, setDirectorStats] = useState({
+        totalEmployees: 0,
+        pendingLeaves: 0,
+        totalSalaryFund: 0,
+        monthlyTrend: {}
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await axios.get("http://localhost:8080/api/dashboard/director-stats");
+                setDirectorStats(res.data);
+                setLoading(false);
+            } catch (err) {
+                console.error("Lỗi khi tải thông số Dashboard BGH:", err);
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    // Tự động phân tách mảng dựng biểu đồ cột biến động quỹ lương 12 tháng năm 2026
+    const formattedTrendData = Array.from({ length: 12 }, (_, i) => {
+        const monthNum = String(i + 1).padStart(2, '0');
+        const key = `${monthNum}/2026`;
+        return {
+            name: `Tháng ${i + 1}`,
+            "Quỹ lương chi trả": (directorStats.monthlyTrend?.[key] || 0) / 1000000 // Chuyển sang đơn vị Triệu đồng
+        };
+    });
 
     return (
         <div className="dashboard-layout">
@@ -16,43 +46,72 @@ function DashboardDirector() {
             <div className="main-content">
                 <TopBar />
                 <div className="content-body" style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
-                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>TỔNG QUAN HỆ THỐNG (BAN GIÁM HIỆU)</h2>
+                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px', textTransform: 'uppercase' }}>
+                        Báo cáo tổng quan của Ban Giám Hiệu
+                    </h2>
 
+                    {/* HÀNG THẺ TIÊU CHÍ THỐNG KÊ REAL-TIME */}
                     <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
                         <div style={cardInfo}>
-                            <p style={labelStyle}>TỔNG NHÂN SỰ TOÀN TRƯỜNG</p>
-                            <h2 style={valueStyle}>120 Người</h2>
+                            <p style={labelStyle}>TỔNG SỐ NHÂN SỰ TOÀN TRƯỜNG</p>
+                            <h2 style={valueStyle}>{loading ? "..." : `${directorStats.totalEmployees} người`}</h2>
                         </div>
-                        <div style={cardInfo}>
-                            <p style={labelStyle}>TỔNG QUỸ LƯƠNG THÁNG</p>
-                            <h2 style={{...valueStyle, color: '#4318ff'}}>1.2 tỷ VNĐ</h2>
+
+                        <div style={directorStats.pendingLeaves > 0 ? cardWarningActive : cardWarningEmpty}>
+                            <p style={labelStyle}>ĐƠN NGHỈ PHÉP CHỜ PHÊ DUYỆT</p>
+                            <h2 style={valueStyle}>
+                                {loading ? "..." : `${directorStats.pendingLeaves} đơn từ`}
+                            </h2>
                         </div>
-                        <div style={cardInfo}>
-                            <p style={labelStyle}>ĐƠN CHỜ DUYỆT</p>
-                            <h2 style={{...valueStyle, color: '#ee5d50'}}>05 Đơn</h2>
+
+                        <div style={cardSuccess}>
+                            <p style={labelStyle}>TỔNG CHI QUỸ LƯƠNG TÍCH LŨY</p>
+                            <h2 style={valueStyle}>
+                                {loading ? "..." : `${(directorStats.totalSalaryFund || 0).toLocaleString()}đ`}
+                            </h2>
                         </div>
                     </div>
 
-                    <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '20px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
-                        <h4 style={{ color: '#1b2559', fontWeight: 'bold', marginBottom: '20px' }}>Biến động quy mô nhân sự</h4>
+                    {/* BIỂU ĐỒ ĐIỀU TRA BIẾN ĐỘNG QUỸ LƯƠNG */}
+                    <div style={chartContainer}>
+                        <h4 style={{ color: '#1b2559', fontWeight: 'bold', marginBottom: '25px' }}>
+                            Biểu đồ diễn biến chi trả quỹ lương năm 2026 (triệu VNĐ)
+                        </h4>
                         <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={dataGrowth}>
+                            <BarChart data={formattedTrendData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="name" />
                                 <YAxis />
-                                <Tooltip />
-                                <Line type="monotone" dataKey="nhanSu" stroke="#4318ff" strokeWidth={3} />
-                            </LineChart>
+                                <Tooltip formatter={(value) => [`${value.toLocaleString()} Triệuđ`, "Chi phí"]} />
+                                <Bar dataKey="Quỹ lương chi trả" fill="#4318ff" radius={[6, 6, 0, 0]} />
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
+
+                    {/* THÔNG TIN CHÀO MỪNG */}
+                    <div style={{ marginTop: '30px', padding: '25px', backgroundColor: '#fff', borderRadius: '15px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.05)' }}>
+                        <h4 style={{ color: '#1b2559', fontWeight: 'bold', marginBottom: '10px' }}>Xin chào Thầy {userName}!</h4>
+                        <p style={{ color: '#475569', margin: 0, lineHeight: '1.6' }}>
+                            Hệ thống đã tự động liên thông dữ liệu. Mọi thay đổi về hồ sơ nhân viên từ phòng hành chính, thao tác khóa sổ bảng lương của kế toán viên, hay đơn từ xin phép của giảng viên gửi lên đều sẽ ngay lập tức được cập nhật số liệu trực quan tại đây để phục vụ công tác quản lý vĩ mô.
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </div>
     );
 }
 
-const labelStyle = { fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '10px', color: '#a3aed0' };
-const valueStyle = { fontSize: '2rem', fontWeight: '800', margin: 0, color: '#1b2559' };
-const cardInfo = { flex: 1, backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.05)' };
+// CẤU TRÚC GIAO DIỆN MÀU SẮC ĐỒ HỌA CHUYÊN NGHIỆP
+const labelStyle = { fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '10px', opacity: 0.9 };
+const valueStyle = { fontSize: '2.2rem', fontWeight: '800', margin: 0 };
+const chartContainer = { backgroundColor: '#fff', borderRadius: '20px', padding: '30px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.06)' };
+
+const cardInfo = { flex: 1, background: 'linear-gradient(90deg, #4318ff 0%, #5e3aff 100%)', borderRadius: '20px', padding: '25px 30px', color: '#fff', boxShadow: '0px 18px 40px rgba(67, 24, 255, 0.2)' };
+const cardSuccess = { flex: 1, background: 'linear-gradient(90deg, #05cd99 0%, #04b688 100%)', borderRadius: '20px', padding: '25px 30px', color: '#fff', boxShadow: '0px 18px 40px rgba(5, 205, 153, 0.2)' };
+
+// Thẻ cảnh báo đơn từ thông minh (Đổi màu cam rực lửa nếu có đơn đang xếp hàng chờ duyệt)
+const cardWarningActive = { flex: 1, background: 'linear-gradient(90deg, #ff9800 0%, #ff5722 100%)', borderRadius: '20px', padding: '25px 30px', color: '#fff', boxShadow: '0px 18px 40px rgba(255, 152, 0, 0.3)' };
+const cardWarningEmpty = { flex: 1, background: '#fff', border: '2px solid #cbd5e1', borderRadius: '20px', padding: '25px 30px', color: '#1b2559' };
 
 export default DashboardDirector;

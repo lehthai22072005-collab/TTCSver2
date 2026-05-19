@@ -59,7 +59,7 @@ function Sidebar() {
 
     return (
         <div className="sidebar">
-            <div className="sidebar-header">MyAdmin</div>
+            <div className="sidebar-header">HỆ THỐNG QUẢN LÍ NHÂN SỰ</div>
             <ul className="sidebar-menu">
                 {menuItems.map((item, index) => (
                     <li key={index} className={activeClass(item.path)}>

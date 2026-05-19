@@ -4,38 +4,47 @@ import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function SalaryPage() {
-    const [month, setMonth] = useState('03/2026');
+    // Mặc định chọn tháng mới nhất để tiện thao tác test
+    const [month, setMonth] = useState('04/2026');
     const [salaryPreview, setSalaryPreview] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    // 1. Xem trước bảng lương nháp dựa trên dữ liệu chấm công thực tế
     const handleCalculate = async () => {
         setLoading(true);
         try {
             const res = await axios.get(`http://localhost:8080/api/salary/preview?month=${month}`);
             setSalaryPreview(res.data);
         } catch (err) {
-            // Nếu Backend trả về lỗi (400 Bad Request), nó sẽ nhảy vào đây
-            alert(err.response?.data || "Lỗi khi tính lương!");
+            // Hiển thị trực tiếp thông báo chặn hoặc thông báo lỗi từ Backend nhả về
+            alert(err.response?.data || "Lỗi khi tính toán bảng lương!");
         } finally {
             setLoading(false);
         }
     };
 
-    // 2. Chốt lương (LOCK) - Chuyển sang trạng thái đã chi trả
+    // 2. Chốt khóa bảng lương chính thức chuyển trạng thái sang Đã Chi Trả
     const handleLockSalary = async () => {
-        if (salaryPreview.length === 0) return alert("Vui lòng tính lương trước khi chốt!");
-        if (window.confirm(`Xác nhận chốt bảng lương tháng ${month}? Dữ liệu sau khi chốt sẽ không thể sửa đổi.`)) {
+        if (salaryPreview.length === 0) return alert("Vui lòng chạy tính lương để có dữ liệu nháp trước khi chốt!");
+
+        if (window.confirm(`Xác nhận khóa chính thức bảng lương tháng ${month}? Dữ liệu sau khi khóa sẽ được lưu lịch sử và không thể chỉnh sửa lại.`)) {
             try {
                 await axios.post(`http://localhost:8080/api/salary/lock?month=${month}`);
-                alert("🔒 Đã chốt lương thành công!");
-                // Chuyển hướng sang trang lịch sử chi trả
+                alert("🔒 Hệ thống: Đã chốt và khóa bảng lương thành công!");
+                // Điều hướng tự động sang trang Lịch sử chi trả để kiểm tra kết quả
                 window.location.href = "/payment-history";
             } catch (err) {
                 console.error(err);
-                alert("Lỗi khi thực hiện chốt lương!");
+                alert("Lỗi hệ thống khi thực hiện chốt bảng lương!");
             }
         }
     };
+
+    // VÒNG LẶP TỰ ĐỘNG TẠO MẢNG CHỨA 12 THÁNG NĂM 2026
+    const monthsArray = Array.from({ length: 12 }, (_, i) => {
+        const monthNum = String(i + 1).padStart(2, '0');
+        return `${monthNum}/2026`;
+    });
 
     return (
         <div className="dashboard-layout">
@@ -47,15 +56,17 @@ function SalaryPage() {
 
                     <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
                         <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '30px' }}>
-                            <span style={{ color: '#2b3674', fontWeight: '500' }}>Tháng:</span>
+                            <span style={{ color: '#2b3674', fontWeight: '500' }}>Chọn kỳ tính lương:</span>
+
+                            {/* BỘ CHỌNDropdown ĐÃ ĐƯỢC NÂNG CẤP LÊN ĐỦ 12 THÁNG */}
                             <select
                                 value={month}
                                 onChange={(e) => setMonth(e.target.value)}
-                                style={{ padding: '8px 15px', borderRadius: '8px', border: '1px solid #e0e5f2', outline: 'none', color: '#2b3674' }}
+                                style={{ padding: '8px 15px', borderRadius: '8px', border: '1px solid #e0e5f2', outline: 'none', color: '#2b3674', fontWeight: '600', backgroundColor: '#f8fafc', cursor: 'pointer' }}
                             >
-                                <option value="03/2026">03/2026</option>
-                                <option value="04/2026">04/2026</option>
-                                <option value="05/2026">05/2026</option>
+                                {monthsArray.map(m => (
+                                    <option key={m} value={m}>Tháng {m}</option>
+                                ))}
                             </select>
 
                             <button
@@ -82,7 +93,7 @@ function SalaryPage() {
                                 <tr style={{ textAlign: 'left', color: '#a3aed0', borderBottom: '2px solid #f4f7fe' }}>
                                     <th style={{ padding: '15px', fontSize: '13px' }}>MÃ NV</th>
                                     <th style={{ padding: '15px', fontSize: '13px' }}>HỌ TÊN</th>
-                                    <th style={{ padding: '15px', fontSize: '13px' }}>CÔNG</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>CÔNG TÍNH</th>
                                     <th style={{ padding: '15px', fontSize: '13px' }}>TIẾT DẠY</th>
                                     <th style={{ padding: '15px', fontSize: '13px' }}>LƯƠNG CB</th>
                                     <th style={{ padding: '15px', fontSize: '13px' }}>TỔNG LĨNH</th>
@@ -92,21 +103,15 @@ function SalaryPage() {
                                 {salaryPreview.length > 0 ? (
                                     salaryPreview.map((s, i) => (
                                         <tr key={i} style={{ borderBottom: '1px solid #f4f7fe' }}>
-                                            {/* Hiển thị ID từ employee, fallback về id chính nếu employee null */}
                                             <td style={{ padding: '15px', color: '#2b3674' }}>NV{s.employee?.id || s.id}</td>
-
                                             <td style={{ padding: '15px', color: '#2b3674', fontWeight: 'bold' }}>
                                                 {s.employee?.fullName || "N/A"}
                                             </td>
-
-                                            <td style={{ padding: '15px', color: '#2b3674' }}>{s.ngayCong || 0}</td>
-
-                                            <td style={{ padding: '15px', color: '#2b3674' }}>{s.tietDay || 0}</td>
-
+                                            <td style={{ padding: '15px', color: '#2b3674' }}>{s.ngayCong || 0} ngày</td>
+                                            <td style={{ padding: '15px', color: '#2b3674' }}>{s.tietDay || 0} tiết</td>
                                             <td style={{ padding: '15px', color: '#2b3674' }}>
                                                 {(s.luongCoBan || 0).toLocaleString()}đ
                                             </td>
-
                                             <td style={{ padding: '15px', color: '#05cd99', fontWeight: 'bold' }}>
                                                 {(s.thucLinh || 0).toLocaleString()}đ
                                             </td>
@@ -114,8 +119,8 @@ function SalaryPage() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#a3aed0' }}>
-                                            Chưa có dữ liệu. Vui lòng nhấn nút tính lương.
+                                        <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#a3aed0', fontWeight: '500' }}>
+                                            Chưa có dữ liệu tính toán. Vui lòng lựa chọn kỳ lương và nhấn nút chạy tính lương.
                                         </td>
                                     </tr>
                                 )}
