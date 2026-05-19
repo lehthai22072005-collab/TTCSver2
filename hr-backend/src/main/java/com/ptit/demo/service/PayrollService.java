@@ -19,34 +19,18 @@ public class PayrollService {
     private static final BigDecimal BHXH_RATE = new BigDecimal("0.105");
     private static final BigDecimal TAX_FREE_THRESHOLD = new BigDecimal("11000000");
 
-    public BigDecimal calculateNetSalary(BigDecimal baseSalary, int totalPeriods, BigDecimal pricePerPeriod) {
-        BigDecimal teachingAllowance = pricePerPeriod.multiply(new BigDecimal(totalPeriods));
-        BigDecimal insuranceDeduction = baseSalary.multiply(BHXH_RATE);
-        BigDecimal grossIncome = baseSalary.add(teachingAllowance);
-        BigDecimal taxableIncome = grossIncome.subtract(TAX_FREE_THRESHOLD).subtract(insuranceDeduction);
-
-        BigDecimal personalTax = BigDecimal.ZERO;
-        if (taxableIncome.compareTo(BigDecimal.ZERO) > 0) {
-            personalTax = taxableIncome.multiply(new BigDecimal("0.05"));
-        }
-        return grossIncome.subtract(insuranceDeduction).subtract(personalTax).setScale(0, RoundingMode.HALF_UP);
-    }
-
     public List<Payroll> calculateForAll(String month, List<Employee> employees) {
         List<Payroll> payrollList = new ArrayList<>();
         BigDecimal pricePerPeriod = new BigDecimal("150000");
 
-        // Chuyển MM/YYYY -> YYYY-MM-% để query LIKE trong SQL
         String[] parts = month.split("/");
         String monthPattern = parts[1] + "-" + parts[0] + "-%";
 
         for (Employee emp : employees) {
-            // Lấy dữ liệu chấm công thực tế
             int workDays = payrollRepository.countWorkDays(emp.getId(), monthPattern);
             Integer totalPeriods = payrollRepository.sumTeachingPeriods(emp.getId(), monthPattern);
             int periods = (totalPeriods != null) ? totalPeriods : 0;
 
-            // BƯỚC CHẶN: Nếu nhân viên không có bất kỳ ngày công hay tiết dạy nào thì không tạo lương
             if (workDays == 0 && periods == 0) {
                 continue;
             }
@@ -55,19 +39,38 @@ public class PayrollService {
             p.setEmployee(emp);
             p.setThangNam(month);
             p.setTrangThaiChot(false);
-
-            BigDecimal actualBaseSalary = (emp.getBaseSalary() != null) ? emp.getBaseSalary() : new BigDecimal("10000000");
-            BigDecimal net = calculateNetSalary(actualBaseSalary, periods, pricePerPeriod);
-
-            p.setLuongCoBan(actualBaseSalary);
-            p.setThucLinh(net);
             p.setNgayCong(workDays);
             p.setTietDay(periods);
+
+            BigDecimal baseSalary = (emp.getBaseSalary() != null) ? emp.getBaseSalary() : new BigDecimal("10000000");
+
+            // 1. Tính phụ cấp đứng lớp (số tiết * 150.000đ)
+            BigDecimal teachingAllowance = pricePerPeriod.multiply(new BigDecimal(periods));
+
+            // 2. Tính khấu trừ bảo hiểm xã hội (10.5% lương cơ bản)
+            BigDecimal insuranceDeduction = baseSalary.multiply(BHXH_RATE).setScale(0, RoundingMode.HALF_UP);
+
+            // 3. Tính thuế thu nhập cá nhân (5% phần thu nhập tính thuế vượt ngưỡng 11 triệu)
+            BigDecimal grossIncome = baseSalary.add(teachingAllowance);
+            BigDecimal taxableIncome = grossIncome.subtract(TAX_FREE_THRESHOLD).subtract(insuranceDeduction);
+            BigDecimal personalTax = BigDecimal.ZERO;
+            if (taxableIncome.compareTo(BigDecimal.ZERO) > 0) {
+                personalTax = taxableIncome.multiply(new BigDecimal("0.05")).setScale(0, RoundingMode.HALF_UP);
+            }
+
+            // 4. Thực lĩnh cuối cùng
+            BigDecimal net = grossIncome.subtract(insuranceDeduction).subtract(personalTax).setScale(0, RoundingMode.HALF_UP);
+
+            // Gán giá trị vào thực thể để lưu xuống DB
+            p.setLuongCoBan(baseSalary);
+            p.setPhuCap(teachingAllowance);
+            p.setBhxhKhauTru(insuranceDeduction);
+            p.setThueTncn(personalTax);
+            p.setThucLinh(net);
 
             payrollList.add(p);
         }
 
-        // Nếu cả danh sách trống (không ai có chấm công)
         if (payrollList.isEmpty()) {
             throw new RuntimeException("Dữ liệu chấm công tháng " + month + " trống. Không thể tính lương!");
         }

@@ -7,79 +7,61 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 function DashboardAccountant() {
     const [stats, setStats] = useState({
         totalEmployees: 0,
-        totalSalaryFund: 0,
         chartData: {},
+        budgetData: {},
         notifications: []
     });
 
-    // STATE MỚI: Dùng để lưu dữ liệu phụ cấp dự tính hiển thị trên biểu đồ
-    const [budgets, setBudgets] = useState({
-        "01/2026": 0,
-        "02/2026": 0,
-        "03/2026": 0
-    });
+    // Quản lý tháng cần xem Quỹ lương đã chốt (Mặc định hiển thị tháng mới nhất vừa tính - Tháng 4)
+    const [selectedFundMonth, setSelectedFundMonth] = useState("04/2026");
 
-    // STATE MỚI: Dùng cho ô nhập liệu cập nhật ngân sách
-    const [inputMonth, setInputMonth] = useState("03/2026");
+    // Quản lý tháng và số tiền khi kế toán thiết lập phụ cấp dự tính
+    const [inputMonth, setInputMonth] = useState("04/2026");
     const [inputAmount, setInputAmount] = useState("");
 
-    // Hàm lấy ngân sách từ Backend
-    const fetchBudgets = async () => {
+    // Hàm đồng bộ dữ liệu tổng hợp từ Backend
+    const fetchStats = async () => {
         try {
-            // Lấy dữ liệu 3 tháng hiển thị trên chart
-            const res1 = await axios.get("http://localhost:8080/api/budget/01-2026");
-            const res2 = await axios.get("http://localhost:8080/api/budget/02-2026");
-            const res3 = await axios.get("http://localhost:8080/api/budget/03-2026");
-
-            setBudgets({
-                "01/2026": res1.data.phuCapDuTinh || 0,
-                "02/2026": res2.data.phuCapDuTinh || 0,
-                "03/2026": res3.data.phuCapDuTinh || 0,
-            });
+            const res = await axios.get("http://localhost:8080/api/dashboard/stats");
+            setStats(res.data);
         } catch (err) {
-            console.error("Lỗi lấy phụ cấp dự tính:", err);
+            console.error("Lỗi đồng bộ hệ thống Dashboard:", err);
         }
     };
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await axios.get("http://localhost:8080/api/dashboard/stats");
-                setStats(res.data);
-            } catch (err) {
-                console.error("Lỗi đồng bộ Dashboard:", err);
-            }
-        };
         fetchStats();
-        fetchBudgets(); // Gọi luôn hàm lấy ngân sách khi load trang
     }, []);
 
-    // HÀM MỚI: Xử lý khi nhấn nút Lưu dự tính
+    // Xử lý lưu thiết lập phụ cấp dự tính cho tháng được chọn
     const handleSaveBudget = async () => {
-        if (!inputAmount) {
-            alert("Vui lòng nhập số tiền!");
-            return;
-        }
+        if (!inputAmount) return alert("Vui lòng nhập số tiền dự tính!");
         try {
             await axios.post('http://localhost:8080/api/budget/save', {
                 thangNam: inputMonth,
-                phuCapDuTinh: parseFloat(inputAmount) * 1000000 // Đổi từ triệu VNĐ sang VNĐ
+                phuCapDuTinh: parseFloat(inputAmount) * 1000000
             });
-            alert("Đã cập nhật phụ cấp dự tính thành công!");
+            alert(`Cập nhật phụ cấp dự tính cho ${inputMonth} thành công!`);
             setInputAmount("");
-            fetchBudgets(); // Gọi lại hàm để biểu đồ tự động cập nhật ngay lập tức
+            fetchStats(); // Tải lại dữ liệu để biểu đồ cập nhật lập tức
         } catch (err) {
-            console.error(err);
             alert("Lỗi khi lưu phụ cấp dự tính!");
         }
     };
 
-    // ĐÃ FIX: Không gán cứng nữa, lấy trực tiếp từ state budgets chia cho 1 triệu
-    const formattedChartData = [
-        { name: 'Tháng 1', Luong: (stats.chartData["01/2026"] || 0) / 1000000, PhuCap: budgets["01/2026"] / 1000000 },
-        { name: 'Tháng 2', Luong: (stats.chartData["02/2026"] || 0) / 1000000, PhuCap: budgets["02/2026"] / 1000000 },
-        { name: 'Tháng 3', Luong: (stats.chartData["03/2026"] || 0) / 1000000, PhuCap: budgets["03/2026"] / 1000000 },
-    ];
+    // VÒNG LẶP ĐỘNG TẠO DỮ LIỆU BIỂU ĐỒ 12 THÁNG TOÀN DIỆN
+    const formattedChartData = Array.from({ length: 12 }, (_, i) => {
+        const monthNum = String(i + 1).padStart(2, '0');
+        const key = `${monthNum}/2026`;
+        return {
+            name: `Tháng ${i + 1}`,
+            Luong: (stats.chartData?.[key] || 0) / 1000000,   // Đổi sang đơn vị Triệu VNĐ
+            PhuCap: (stats.budgetData?.[key] || 0) / 1000000  // Đổi sang đơn vị Triệu VNĐ
+        };
+    });
+
+    // Mảng danh sách 12 tháng phục vụ render các ô lựa chọn (Select)
+    const monthsArray = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0') + "/2026");
 
     return (
         <div className="dashboard-layout">
@@ -89,34 +71,45 @@ function DashboardAccountant() {
                 <div className="content-body" style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
                     <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>DASHBOARD ACCOUNTANT</h2>
 
+                    {/* HÀNG 1: THỐNG KÊ TỔNG QUAN */}
                     <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
                         <div style={cardPrimary}>
                             <p style={labelStyle}>TỔNG SỐ NHÂN SỰ</p>
                             <h2 style={valueStyle}>{stats.totalEmployees} người</h2>
                         </div>
+
+                        {/* THIẾT KẾ MỚI: Thẻ xem quỹ lương chốt linh hoạt 12 tháng */}
                         <div style={cardSecondary}>
-                            <p style={{...labelStyle, color: '#a3aed0'}}>QUỸ LƯƠNG THÁNG 03/2026</p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <p style={{...labelStyle, color: '#a3aed0', margin: 0}}>QUỸ LƯƠNG ĐÃ CHỐT</p>
+                                <select
+                                    value={selectedFundMonth}
+                                    onChange={(e) => setSelectedFundMonth(e.target.value)}
+                                    style={{ padding: '4px 8px', borderRadius: '8px', border: '1px solid #cbd5e0', outline: 'none', fontWeight: 'bold', color: '#2b3674', backgroundColor: '#f8fafc', cursor: 'pointer' }}
+                                >
+                                    {monthsArray.map(m => <option key={m} value={m}>Tháng {m.split('/')[0]}</option>)}
+                                </select>
+                            </div>
                             <h2 style={{...valueStyle, color: '#1b2559'}}>
-                                {stats.totalSalaryFund.toLocaleString()}đ
+                                {(stats.chartData?.[selectedFundMonth] || 0).toLocaleString()}đ
                             </h2>
                         </div>
                     </div>
 
+                    {/* HÀNG 2: BIỂU ĐỒ DIỄN BIẾN ĐỦ 12 THÁNG */}
                     <div style={chartContainer}>
-                        {/* GIAO DIỆN MỚI: Ô nhập liệu cho kế toán */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                            <h4 style={{ color: '#1b2559', fontWeight: 'bold', margin: 0 }}>Biến động chi phí lương (triệu VNĐ)</h4>
+                            <h4 style={{ color: '#1b2559', fontWeight: 'bold', margin: 0 }}>Biến động chi phí lương cả năm (triệu VNĐ)</h4>
 
+                            {/* CÀI ĐẶT DỰ TÍNH CHO TOÀN BỘ 12 THÁNG */}
                             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#f4f7fe', padding: '10px 15px', borderRadius: '10px' }}>
                                 <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#2b3674' }}>Cài đặt dự tính:</span>
                                 <select
                                     value={inputMonth}
                                     onChange={(e) => setInputMonth(e.target.value)}
-                                    style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #e2e8f0', outline: 'none' }}
+                                    style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #e2e8f0', outline: 'none', fontWeight: '600' }}
                                 >
-                                    <option value="01/2026">Tháng 1</option>
-                                    <option value="02/2026">Tháng 2</option>
-                                    <option value="03/2026">Tháng 3</option>
+                                    {monthsArray.map(m => <option key={m} value={m}>Tháng {m.split('/')[0]}</option>)}
                                 </select>
                                 <input
                                     type="number"
@@ -134,7 +127,7 @@ function DashboardAccountant() {
                             </div>
                         </div>
 
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={320}>
                             <BarChart data={formattedChartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="name" />
@@ -147,12 +140,13 @@ function DashboardAccountant() {
                         </ResponsiveContainer>
                     </div>
 
+                    {/* HÀNG 3: THÔNG BÁO HỆ THỐNG */}
                     <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', borderRadius: '15px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
                         <h4 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '15px' }}>Thông báo hệ thống</h4>
                         <ul style={{ color: '#475569', lineHeight: '2', listStyle: 'none', padding: 0 }}>
                             {stats.notifications && stats.notifications.length > 0 ? (
                                 stats.notifications.map((note) => (
-                                    <li key={note.id} style={{ marginBottom: '8px', borderBottom: '1px solid #f4f7fe', paddingBottom: '5px' }}>
+                                    <li key={note.id} style={{ ...liStyle }}>
                                         • {note.noiDung}
                                         <small style={{ color: '#a3aed0', marginLeft: '10px' }}>
                                             ({new Date(note.timestamp).toLocaleDateString()})
@@ -171,9 +165,10 @@ function DashboardAccountant() {
 }
 
 const cardPrimary = { flex: 1, background: 'linear-gradient(90deg, #4318ff 0%, #5e3aff 100%)', borderRadius: '20px', padding: '30px', color: '#fff', boxShadow: '0px 18px 40px rgba(67, 24, 255, 0.2)' };
-const cardSecondary = { flex: 1, background: '#fff', border: '2px solid #05cd99', borderRadius: '20px', padding: '30px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)' };
+const cardSecondary = { flex: 1, background: '#fff', border: '2px solid #05cd99', borderRadius: '20px', padding: '25px 30px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)', display: 'flex', flexDirection: 'column', justifyContent: 'center' };
 const labelStyle = { fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '10px' };
 const valueStyle = { fontSize: '2.4rem', fontWeight: '800', margin: 0 };
 const chartContainer = { backgroundColor: '#fff', borderRadius: '20px', padding: '30px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' };
+const liStyle = { marginBottom: '8px', borderBottom: '1px solid #f4f7fe', paddingBottom: '5px' };
 
 export default DashboardAccountant;

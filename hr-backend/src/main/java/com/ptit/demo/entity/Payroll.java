@@ -13,7 +13,7 @@ public class Payroll {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER) // Ép hệ thống lấy luôn thông tin nhân viên
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "employee_id")
     private Employee employee;
 
@@ -25,6 +25,12 @@ public class Payroll {
 
     @Column(name = "phu_cap")
     private BigDecimal phuCap;
+
+    @Column(name = "bhxh_khau_tru")
+    private BigDecimal bhxhKhauTru; // MỚI BỔ SUNG
+
+    @Column(name = "thue_tncn")
+    private BigDecimal thueTncn; // MỚI BỔ SUNG
 
     @Column(name = "thuc_linh")
     private BigDecimal thucLinh;

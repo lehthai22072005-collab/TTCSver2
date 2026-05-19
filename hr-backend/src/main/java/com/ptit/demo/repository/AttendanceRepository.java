@@ -1,9 +1,13 @@
 package com.ptit.demo.repository;
 
+import com.ptit.demo.entity.Attendance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
-// Quan trọng: Phải chỉ định rõ package của Attendance ở đây
 @Repository
-public interface AttendanceRepository extends JpaRepository<com.ptit.demo.entity.Attendance, Long> {
+public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+
+    // THÊM MỚI: Lấy danh sách chấm công của riêng một nhân viên cụ thể
+    List<Attendance> findByEmployeeId(Long employeeId);
 }

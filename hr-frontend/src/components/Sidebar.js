@@ -21,6 +21,7 @@ function Sidebar() {
     // 2. Phân quyền cho KẾ TOÁN (ACCOUNTANT)
     else if (role === 'ACCOUNTANT') {
         menuItems = [
+            { path: '/dashboard', label: 'Dashboard Kế toán' }, // THÊM MỚI Ở ĐÂY ĐỂ TRÁNH LẠC ĐƯỜNG
             { path: '/employees', label: 'Quản lý nhân sự' },
             { path: '/attendance', label: 'Quản lý chấm công' },
             { path: '/salary', label: 'Tính lương' },
@@ -28,12 +29,12 @@ function Sidebar() {
             { path: '/profile', label: 'Thông tin cá nhân' }
         ];
     }
-    // 3. Phân quyền cho BAN GIÁM HIỆU (DIRECTOR) - Đã sửa theo WF
+    // 3. Phân quyền cho BAN GIÁM HIỆU (DIRECTOR)
     else if (role === 'DIRECTOR') {
         menuItems = [
             { path: '/dashboard', label: 'Trang chủ' },
             { path: '/approvals', label: 'Phê duyệt đơn từ' },
-            { path: '/hr-reports', label: 'Báo cáo nhân sự' }, // Đã đổi tên thay cho Thông tin cá nhân
+            { path: '/hr-reports', label: 'Báo cáo nhân sự' },
             { path: '/salary-fund', label: 'Biến động quỹ lương' }
         ];
     }
@@ -46,7 +47,7 @@ function Sidebar() {
             { path: '/leave-request', label: 'Nghỉ phép' }
         ];
     }
-    // 5. Phân quyền cho NHÂN VIÊN BẢO VỆ / STAFF
+    // 5. Phân quyền cho NHÂN VIÊN (STAFF)
     else if (role === 'STAFF') {
         menuItems = [
             { path: '/dashboard', label: 'Trang chủ' },
