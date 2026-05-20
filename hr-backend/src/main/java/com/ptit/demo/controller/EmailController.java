@@ -1,7 +1,10 @@
 package com.ptit.demo.controller;
 
+import com.ptit.demo.service.EmailService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Map;
 
 @RestController
@@ -9,23 +12,31 @@ import java.util.Map;
 @CrossOrigin("*")
 public class EmailController {
 
-    @PostMapping("/send-payslip")
-    public ResponseEntity<?> sendPayslipEmail(@RequestBody Map<String, Object> payload) {
-        // MOCK EMAIL SENDING
-        Object emailObj = payload.get("email");
-        String employeeEmail = (emailObj != null) ? emailObj.toString() : "unknown@example.com";
-        String month = payload.getOrDefault("month", "X").toString();
-        
-        System.out.println("=========================================");
-        System.out.println("MOCK EMAIL SENT!");
-        System.out.println("To: " + employeeEmail);
-        System.out.println("Subject: Phiếu lương tháng " + month);
-        System.out.println("Lệnh gửi email + File đính kèm đã được thực thi thành công!");
-        System.out.println("=========================================");
-        
-        return ResponseEntity.ok(Map.of(
-            "status", "success", 
-            "message", "Đã mô phỏng gửi email (Mock) tới: " + employeeEmail
-        ));
+    @Autowired
+    private EmailService emailService;
+
+    @PostMapping("/test")
+    public ResponseEntity<?> sendTestEmail(@RequestBody Map<String, String> payload) {
+        try {
+            String toEmail = payload.get("toEmail");
+
+            if (toEmail == null || toEmail.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Vui lòng nhập email nhận thử!"
+                ));
+            }
+
+            String result = emailService.sendTestEmail(toEmail);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", result
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
     }
 }

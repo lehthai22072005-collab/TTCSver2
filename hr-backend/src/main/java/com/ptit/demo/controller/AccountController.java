@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
+import com.ptit.demo.service.SystemConfigService;
+import com.ptit.demo.service.EmailService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +17,12 @@ import java.util.Map;
 @RequestMapping("/api/accounts")
 @CrossOrigin("*")
 public class AccountController {
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private SystemConfigService configService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -85,34 +93,72 @@ public class AccountController {
         }
     }
 
-    // 2. TẠO TÀI KHOẢN MỚI
     @PostMapping("/create")
     public ResponseEntity<?> createAccount(@RequestBody Map<String, String> data) {
         try {
             Long empId;
             String empIdStr = data.get("employeeId");
-            String actionBy = data.get("actionBy"); // Lấy người thực hiện từ Frontend
+            String actionBy = data.get("actionBy");
+
+            Employee emp;
 
             if (empIdStr != null && !empIdStr.trim().isEmpty()) {
                 empId = Long.parseLong(empIdStr);
+
+                emp = employeeRepository.findById(empId).orElse(null);
+
+                if (emp == null) {
+                    return ResponseEntity.status(404).body(Map.of(
+                            "message", "Không tìm thấy nhân viên!"
+                    ));
+                }
             } else {
-                Employee emp = new Employee();
+                emp = new Employee();
                 emp.setFullName(data.get("fullName"));
                 emp.setEmail(data.get("email"));
                 emp = employeeRepository.save(emp);
                 empId = emp.getId();
             }
 
-            String table = getTableName(data.get("role"));
+            String username = data.get("username");
+            String password = data.get("password");
+            String role = data.get("role");
+            String status = data.get("status") != null ? data.get("status") : "Active";
+
+            String table = getTableName(role);
+
             String sql = "INSERT INTO " + table + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)";
-            jdbcTemplate.update(sql, data.get("username"), data.get("password"), empId, data.get("status") != null ? data.get("status") : "Active");
 
-            // GỌI HÀM GHI LOG
-            ghiLogHeThong("Tạo tài khoản mới: " + data.get("username"), actionBy);
+            jdbcTemplate.update(sql, username, password, empId, status);
 
-            return ResponseEntity.ok(Map.of("message", "Tạo tài khoản thành công!"));
+            ghiLogHeThong("Tạo tài khoản mới: " + username, actionBy);
+
+            String emailMessage;
+
+            try {
+                if (emp.getEmail() != null && !emp.getEmail().trim().isEmpty()) {
+                    emailMessage = emailService.sendAccountCreatedEmail(
+                            emp.getEmail(),
+                            emp.getFullName(),
+                            username,
+                            password,
+                            role
+                    );
+                } else {
+                    emailMessage = "Nhân viên chưa có email nên không gửi thông báo tài khoản.";
+                }
+            } catch (Exception emailEx) {
+                emailMessage = "Tạo tài khoản thành công nhưng gửi email thất bại: " + emailEx.getMessage();
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Tạo tài khoản thành công!",
+                    "emailMessage", emailMessage
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo User: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of(
+                    "message", "Lỗi tạo User: " + e.getMessage()
+            ));
         }
     }
 
@@ -196,43 +242,59 @@ public class AccountController {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi lấy log: " + e.getMessage()));
         }
     }
-    // 6. ĐỔI MẬT KHẨU CÁ NHÂN (Dành cho user tự đổi)
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(@RequestBody Map<String, String> data) {
         try {
             String username = data.get("username");
-            String role = data.get("role"); // Nhận Role từ Frontend (ADMIN, ACCOUNTANT, TEACHER, STAFF, DIRECTOR)
+            String role = data.get("role");
             String oldPassword = data.get("oldPassword");
             String newPassword = data.get("newPassword");
 
-            // Xác định đúng bảng trong Database dựa trên Role
-            String table = "staff"; // Mặc định là TEACHER hoặc STAFF
-            if ("ADMIN".equals(role)) table = "admin";
-            else if ("ACCOUNTANT".equals(role)) table = "accountant";
-            else if ("DIRECTOR".equals(role)) table = "ban_giam_hieu";
+            int minPasswordLength = configService.getInt("minPasswordLength", 8);
 
-            // 1. Kiểm tra mật khẩu cũ có khớp không
+            if (newPassword == null || newPassword.length() < minPasswordLength) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Mật khẩu mới phải có ít nhất " + minPasswordLength + " ký tự!"
+                ));
+            }
+
+            String table = "staff";
+
+            if ("ADMIN".equals(role)) {
+                table = "admin";
+            } else if ("ACCOUNTANT".equals(role)) {
+                table = "accountant";
+            } else if ("DIRECTOR".equals(role)) {
+                table = "ban_giam_hieu";
+            }
+
             String sqlCheck = "SELECT password FROM " + table + " WHERE username = ?";
             List<String> passwords = jdbcTemplate.queryForList(sqlCheck, String.class, username);
 
             if (passwords.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of("message", "Lỗi: Không tìm thấy tài khoản trong CSDL!"));
-            }
-            if (!passwords.get(0).equals(oldPassword)) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Mật khẩu hiện tại không chính xác!"));
+                return ResponseEntity.status(404).body(Map.of(
+                        "message", "Lỗi: Không tìm thấy tài khoản trong CSDL!"
+                ));
             }
 
-            // 2. Cập nhật mật khẩu mới
+            if (!passwords.get(0).equals(oldPassword)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Mật khẩu hiện tại không chính xác!"
+                ));
+            }
+
             String sqlUpdate = "UPDATE " + table + " SET password = ? WHERE username = ?";
             jdbcTemplate.update(sqlUpdate, newPassword, username);
 
-            // 3. Tự động ghi Log hệ thống
             ghiLogHeThong("Đổi mật khẩu cá nhân", username);
 
-            return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
+            return ResponseEntity.ok(Map.of(
+                    "message", "Đổi mật khẩu thành công!"
+            ));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of(
+                    "message", "Lỗi hệ thống: " + e.getMessage()
+            ));
         }
     }
 }

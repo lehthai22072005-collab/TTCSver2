@@ -135,11 +135,16 @@ CREATE TABLE system_logs (
     nguoi_dung VARCHAR(100)
 );
 
-CREATE TABLE system_config (
+CREATE TABLE IF NOT EXISTS system_config (
     id INT PRIMARY KEY AUTO_INCREMENT,
     config_key VARCHAR(50) UNIQUE NOT NULL,
     config_value VARCHAR(255),
     description VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS login_attempts (
+    username VARCHAR(100) PRIMARY KEY,
+    fail_count INT DEFAULT 0
 );
 
 -- ==========================================================
@@ -167,3 +172,21 @@ UPDATE employee SET contract_start_date = '2026-01-05', contract_end_date = '202
 UPDATE employee SET contract_start_date = '2026-01-10', contract_end_date = '2028-01-10' WHERE id = 2;
 UPDATE employee SET contract_start_date = '2026-02-15', contract_end_date = '2028-02-15' WHERE id = 3;
 UPDATE employee SET contract_start_date = '2025-03-10', contract_end_date = '2026-03-10' WHERE id = 4;
+
+
+INSERT INTO system_config (config_key, config_value, description) VALUES
+('minPasswordLength', '8', 'Độ dài mật khẩu tối thiểu'),
+('maxLoginAttempts', '5', 'Số lần đăng nhập sai tối đa'),
+('maintenanceMode', 'false', 'Chế độ bảo trì hệ thống'),
+('emailEnabled', 'false', 'Bật hoặc tắt chức năng gửi email'),
+('smtpUsername', '', 'Gmail dùng để gửi mail'),
+('smtpPassword', '', 'App Password Gmail'),
+('senderName', 'PTIT HR Management', 'Tên người gửi email')
+ON DUPLICATE KEY UPDATE
+config_value = VALUES(config_value),
+description = VALUES(description);
+
+UPDATE login_attempts SET fail_count = 0 WHERE username = 'gv_lan';
+
+DELETE FROM bang_luong WHERE thang_nam = '04/2026';
+
