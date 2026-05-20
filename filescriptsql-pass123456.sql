@@ -39,7 +39,7 @@ CREATE TABLE employee (
     base_salary DECIMAL(15,2) DEFAULT 10000000 
 );
 
--- Khối Giảng viên (Dùng bảng staff để lưu)
+-- Khối Giảng viên/Nhân viên (Dùng bảng staff để lưu)
 CREATE TABLE staff (
     staff_id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -127,13 +127,12 @@ CREATE TABLE monthly_budget (
     phu_cap_du_tinh DECIMAL(15,2) DEFAULT 0
 );
 
+-- ĐÃ FIX: Chuẩn hóa các cột để khớp với logic tự động ghi Log ở Backend
 CREATE TABLE system_logs (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_role VARCHAR(50),
-    action VARCHAR(100),
-    details TEXT,
-    noi_dung TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    thoi_gian VARCHAR(50), 
+    hanh_dong VARCHAR(255),
+    nguoi_dung VARCHAR(100)
 );
 
 CREATE TABLE system_config (
@@ -144,7 +143,7 @@ CREATE TABLE system_config (
 );
 
 -- ==========================================================
--- 3. CHÈN 4 TÀI KHOẢN MẪU ĐỂ TEST
+-- 3. CHÈN TÀI KHOẢN MẪU VÀ CẬP NHẬT DỮ LIỆU
 -- ==========================================================
 
 -- 1. Chèn Hồ sơ 4 nhân viên gốc
@@ -160,15 +159,11 @@ INSERT INTO ban_giam_hieu (username, password, employee_id) VALUES ('bgh_phat', 
 INSERT INTO accountant (username, password, employee_id) VALUES ('kt_hai', '123456', 3);
 INSERT INTO admin (username, password, employee_id) VALUES ('admin_thai', '123456', 4);
 
-
--- 1. Thêm cột contract_start_date vào bảng employee
+-- 3. Thêm cột contract_start_date vào bảng employee
 ALTER TABLE employee ADD COLUMN contract_start_date DATE AFTER academic_degree;
 
--- 2. Cập nhật lại ngày Bắt đầu và Kết thúc cho 4 nhân sự gốc
--- Người 1, 2, 3: Bắt đầu tháng 1/2026, hợp đồng 2 năm
+-- 4. Cập nhật lại ngày Bắt đầu và Kết thúc cho 4 nhân sự gốc
 UPDATE employee SET contract_start_date = '2026-01-05', contract_end_date = '2028-01-05' WHERE id = 1;
 UPDATE employee SET contract_start_date = '2026-01-10', contract_end_date = '2028-01-10' WHERE id = 2;
 UPDATE employee SET contract_start_date = '2026-02-15', contract_end_date = '2028-02-15' WHERE id = 3;
-
--- Người 4 (Admin): Hợp đồng 1 năm, bắt đầu từ 2025, kết thúc vào Tháng 3/2026 (Đã hết hạn để tạo biểu đồ Thôi việc)
 UPDATE employee SET contract_start_date = '2025-03-10', contract_end_date = '2026-03-10' WHERE id = 4;
