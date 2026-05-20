@@ -32,13 +32,12 @@ public class AccountController {
         }
     }
 
-    // 1. LẤY DANH SÁCH (Đã nâng cấp: Lấy toàn bộ nhân viên, ai chưa có tài khoản sẽ báo trống)
+    // 1. LẤY DANH SÁCH (Đã thêm lấy e.id để Frontend nhận diện được nhân viên)
     @GetMapping("/list")
     public ResponseEntity<?> getAllAccounts() {
         try {
-            // Sử dụng LEFT JOIN từ bảng employee để không bỏ sót bất kỳ nhân sự nào (như bác Bảo vệ)
             String sql =
-                    "SELECT e.full_name, e.email, " +
+                    "SELECT e.id as employee_id, e.full_name, e.email, " +
                             "COALESCE(a.username, c.username, s.username, b.username) as username, " +
                             "CASE " +
                             "WHEN a.username IS NOT NULL THEN 'Admin' " +
@@ -56,6 +55,8 @@ public class AccountController {
 
             List<Map<String, Object>> accounts = jdbcTemplate.query(sql, (rs, rowNum) -> {
                 Map<String, Object> map = new HashMap<>();
+
+                map.put("employeeId", rs.getString("employee_id")); // QUAN TRỌNG: Lấy ID gửi về React
 
                 String username = rs.getString("username");
                 map.put("username", username != null ? username : "[ Chưa có tài khoản ]");
@@ -75,29 +76,36 @@ public class AccountController {
         }
     }
 
-    // 2. TẠO TÀI KHOẢN MỚI (Đã fix lỗi NullPointer cho nhân viên mới)
+    // 2. TẠO TÀI KHOẢN MỚI (Thông minh: Xử lý cả cấp cho người cũ và tạo người mới)
     @PostMapping("/create")
     public ResponseEntity<?> createAccount(@RequestBody Map<String, String> data) {
         try {
-            // Lấy employee_id từ request (bạn cần gửi kèm employeeId từ phía Frontend)
+            Long empId;
             String empIdStr = data.get("employeeId");
-            if (empIdStr == null) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Thiếu ID nhân viên!"));
+
+            // Nếu frontend gửi lên employeeId -> Tức là cấp tài khoản cho người đã có sẵn (như thai ngau loi)
+            if (empIdStr != null && !empIdStr.trim().isEmpty()) {
+                empId = Long.parseLong(empIdStr);
+            } else {
+                // Nếu không có employeeId -> Nút [+ Tạo User] -> Tạo mới hoàn toàn 1 nhân viên vào DB
+                Employee emp = new Employee();
+                emp.setFullName(data.get("fullName"));
+                emp.setEmail(data.get("email"));
+                emp = employeeRepository.save(emp);
+                empId = emp.getId();
             }
 
-            Long empId = Long.parseLong(empIdStr);
             String table = getTableName(data.get("role"));
-
-            // Câu lệnh INSERT trực tiếp
             String sql = "INSERT INTO " + table + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)";
-            jdbcTemplate.update(sql, data.get("username"), data.get("password"), empId, "Active");
+            jdbcTemplate.update(sql, data.get("username"), data.get("password"), empId, data.get("status") != null ? data.get("status") : "Active");
 
-            return ResponseEntity.ok(Map.of("message", "Cấp tài khoản thành công!"));
+            return ResponseEntity.ok(Map.of("message", "Tạo tài khoản thành công!"));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi cấp tài khoản: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo User: " + e.getMessage()));
         }
     }
+
     // 3. SỬA TÀI KHOẢN
     @PostMapping("/update")
     public ResponseEntity<?> updateAccount(@RequestBody Map<String, String> data) {
@@ -112,15 +120,15 @@ public class AccountController {
             String oldTable = getTableName(oldRole);
             String newTable = getTableName(newRole);
 
-            Long empId = jdbcTemplate.queryForObject("SELECT employee_id FROM " + oldTable + " WHERE username = ?", Long.class, oldUsername);
+            List<Long> ids = jdbcTemplate.queryForList("SELECT employee_id FROM " + oldTable + " WHERE username = ?", Long.class, oldUsername);
+            if (ids.isEmpty()) return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy TK cũ."));
+            Long empId = ids.get(0);
 
-            if(empId != null) {
-                Employee emp = employeeRepository.findById(empId).orElse(null);
-                if(emp != null) {
-                    emp.setFullName(data.get("fullName"));
-                    emp.setEmail(data.get("email"));
-                    employeeRepository.save(emp);
-                }
+            Employee emp = employeeRepository.findById(empId).orElse(null);
+            if(emp != null) {
+                emp.setFullName(data.get("fullName"));
+                emp.setEmail(data.get("email"));
+                employeeRepository.save(emp);
             }
 
             if (!oldRole.equals(newRole)) {
@@ -152,7 +160,7 @@ public class AccountController {
             String sql = "UPDATE " + getTableName(role) + " SET status = ? WHERE username = ?";
             jdbcTemplate.update(sql, newStatus, username);
 
-            return ResponseEntity.ok(Map.of("message", "Đã thay đổi trạng thái tài khoản!"));
+            return ResponseEntity.ok(Map.of("message", "Đã thay đổi trạng thái!"));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi DB: " + e.getMessage()));

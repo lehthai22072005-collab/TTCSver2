@@ -8,13 +8,12 @@ function AccountManagementPage() {
     const [showModal, setShowModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
 
-    // Form data
+    // Form data: Đã bổ sung trường employeeId
     const [formData, setFormData] = useState({
-        oldUsername: '', oldRole: '',
+        employeeId: '', oldUsername: '', oldRole: '',
         username: '', fullName: '', email: '', password: '', role: 'Admin', status: 'Active'
     });
 
-    // 1. Fetch dữ liệu khi load trang
     const fetchAccounts = async () => {
         try {
             const res = await axios.get('http://localhost:8080/api/accounts/list');
@@ -28,41 +27,53 @@ function AccountManagementPage() {
         fetchAccounts();
     }, []);
 
-    // 2. Mở Modal
+    // XỬ LÝ MỞ FORM THÔNG MINH
     const handleOpenModal = (account = null) => {
         if (account) {
-            setIsEditMode(true);
-            setFormData({
-                oldUsername: account.username, oldRole: account.role,
-                username: account.username, fullName: account.fullName, email: account.email,
-                password: '', // Để trống password khi edit, nếu nhập mới update
-                role: account.role, status: account.status
-            });
+            // Nếu bấm vào người chưa có tài khoản -> Chuyển sang mode CREATE (Cấp TK)
+            if (account.username === "[ Chưa có tài khoản ]") {
+                setIsEditMode(false);
+                setFormData({
+                    employeeId: account.employeeId, // Giữ ID để cấp TK cho đúng người
+                    oldUsername: '', oldRole: '',
+                    username: '', fullName: account.fullName, email: account.email || '',
+                    password: '', role: 'Nhân viên', status: 'Active'
+                });
+            } else {
+                // Nếu bấm vào người đã có tài khoản -> Mode EDIT (Chỉnh sửa)
+                setIsEditMode(true);
+                setFormData({
+                    employeeId: account.employeeId,
+                    oldUsername: account.username, oldRole: account.role,
+                    username: account.username, fullName: account.fullName, email: account.email || '',
+                    password: '', // Để trống, có sửa thì backend cập nhật
+                    role: account.role, status: account.status
+                });
+            }
         } else {
+            // Nút [+ Tạo User] -> Tạo mới hoàn toàn cả NV lẫn Tài khoản
             setIsEditMode(false);
             setFormData({
-                oldUsername: '', oldRole: '',
+                employeeId: '', oldUsername: '', oldRole: '',
                 username: '', fullName: '', email: '', password: '', role: 'Admin', status: 'Active'
             });
         }
         setShowModal(true);
     };
 
-    // 3. Lưu (Create hoặc Update)
     const handleSave = async () => {
         try {
             const endpoint = isEditMode ? '/update' : '/create';
             await axios.post(`http://localhost:8080/api/accounts${endpoint}`, formData);
             alert(isEditMode ? "Cập nhật thành công!" : "Tạo mới thành công!");
             setShowModal(false);
-            fetchAccounts(); // Load lại bảng
+            fetchAccounts();
         } catch (err) {
-            // Dòng này sẽ lấy đúng lỗi từ Backend (ví dụ: Thiếu cột status, trùng email...) hiển thị lên
             alert(err.response?.data?.message || "Có lỗi xảy ra!");
             console.error(err);
         }
     };
-    // 4. Nút Khóa/Mở khóa nhanh
+
     const handleToggleStatus = async (account) => {
         if(window.confirm(`Bạn có chắc muốn ${account.status === 'Active' ? 'khóa' : 'mở khóa'} user ${account.username}?`)) {
             try {
@@ -93,7 +104,6 @@ function AccountManagementPage() {
                         </button>
                     </div>
 
-                    {/* BẢNG DỮ LIỆU */}
                     <div style={{ backgroundColor: '#fff', borderRadius: '15px', padding: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
@@ -115,10 +125,20 @@ function AccountManagementPage() {
                                     <td>{acc.role}</td>
                                     <td style={{ color: acc.status === 'Active' ? '#05cd99' : '#e53e3e' }}>{acc.status}</td>
                                     <td>
-                                        <button onClick={() => handleOpenModal(acc)} style={{ color: '#4318ff', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>[Edit]</button>
-                                        <button onClick={() => handleToggleStatus(acc)} style={{ color: acc.status === 'Active' ? '#e53e3e' : '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                                            [{acc.status === 'Active' ? 'Lock' : 'Unlock'}]
-                                        </button>
+                                        {acc.username === "[ Chưa có tài khoản ]" ? (
+                                            <button onClick={() => handleOpenModal(acc)} style={{ color: '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                [Cấp TK]
+                                            </button>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => handleOpenModal(acc)} style={{ color: '#4318ff', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>
+                                                    [Edit]
+                                                </button>
+                                                <button onClick={() => handleToggleStatus(acc)} style={{ color: acc.status === 'Active' ? '#e53e3e' : '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                    [{acc.status === 'Active' ? 'Lock' : 'Unlock'}]
+                                                </button>
+                                            </>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -126,12 +146,11 @@ function AccountManagementPage() {
                         </table>
                     </div>
 
-                    {/* MODAL TẠO/SỬA */}
                     {showModal && (
                         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                             <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '15px', width: '400px' }}>
                                 <h3 style={{ textAlign: 'center', marginBottom: '20px', color: '#1b2559' }}>
-                                    {isEditMode ? 'EDIT USER' : 'CREATE USER'}
+                                    {isEditMode ? 'EDIT USER' : (formData.employeeId ? 'CẤP TÀI KHOẢN' : 'CREATE USER')}
                                 </h3>
 
                                 <div style={{ marginBottom: '15px' }}>
