@@ -1,28 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar'; // Nhớ kiểm tra đường dẫn import Sidebar
-import TopBar from '../components/TopBar';   // Nhớ kiểm tra đường dẫn import TopBar
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Thêm thư viện điều hướng
+import Sidebar from '../components/Sidebar';
+import TopBar from '../components/TopBar';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
-function DashboardAdmin() {
-    // Tạm thời dùng Mock Data để giao diện hiển thị đẹp, sau này bạn nối API sau
-    const [stats, setStats] = useState({
-        totalAccounts: 5,
-        activeAccounts: 4,
-        lockedAccounts: 1,
-        rolesData: [
-            { name: 'Admin', value: 1 },
-            { name: 'Kế toán', value: 1 },
-            { name: 'Ban Giám Hiệu', value: 1 },
-            { name: 'Giảng viên/Nhân viên', value: 2 },
-        ],
-        recentLogs: [
-            { id: 1, time: '11:20 15/05/2026', action: 'Tạo tài khoản mới', user: 'thai' },
-            { id: 2, time: '10:10 15/05/2026', action: 'Update config', user: 'admin' },
-            { id: 3, time: '10:05 15/05/2026', action: 'Khóa user nam', user: 'admin' },
-        ]
+function AdminDashboardPage() {
+    const navigate = useNavigate();
+    const [accounts, setAccounts] = useState([]);
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // --- PHÂN TRANG CHO LOGS ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const logsPerPage = 5; // Dashboard chỉ hiện 5 dòng/trang cho gọn
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const accRes = await axios.get('http://localhost:8080/api/accounts/list');
+                setAccounts(accRes.data);
+                const logRes = await axios.get('http://localhost:8080/api/accounts/logs');
+                setLogs(logRes.data);
+                setLoading(false);
+            } catch (err) {
+                console.error("Lỗi khi tải dữ liệu Dashboard:", err);
+                setLoading(false);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
+    // Logic thống kê tài khoản
+    const validAccounts = accounts.filter(acc => acc.username !== '[ Chưa có tài khoản ]');
+    const totalAccounts = validAccounts.length;
+    const activeAccounts = validAccounts.filter(acc => acc.status === 'Active').length;
+    const lockedAccounts = validAccounts.filter(acc => acc.status === 'Locked' || acc.status === 'Khóa').length;
+
+    const rolesCount = { 'Admin': 0, 'Ban Giám Hiệu': 0, 'Giảng viên/Nhân viên': 0, 'Kế toán': 0 };
+    validAccounts.forEach(acc => {
+        if (acc.role === 'Admin') rolesCount['Admin']++;
+        else if (acc.role === 'Ban Giám Hiệu') rolesCount['Ban Giám Hiệu']++;
+        else if (acc.role === 'Kế toán') rolesCount['Kế toán']++;
+        else rolesCount['Giảng viên/Nhân viên']++;
     });
 
-    const COLORS = ['#4318ff', '#05cd99', '#ffce20', '#f65160'];
+    const pieData = [
+        { name: 'Admin', value: rolesCount['Admin'], color: '#4318ff' },
+        { name: 'Ban Giám Hiệu', value: rolesCount['Ban Giám Hiệu'], color: '#ffb547' },
+        { name: 'Nhân viên', value: rolesCount['Giảng viên/Nhân viên'], color: '#ff5630' },
+        { name: 'Kế toán', value: rolesCount['Kế toán'], color: '#05cd99' }
+    ].filter(item => item.value > 0);
+
+    // --- XỬ LÝ DỮ LIỆU PHÂN TRANG ---
+    const indexOfLastLog = currentPage * logsPerPage;
+    const indexOfFirstLog = indexOfLastLog - logsPerPage;
+    const currentLogs = logs.slice(indexOfFirstLog, indexOfLastLog);
+    const totalPages = Math.ceil(logs.length / logsPerPage);
 
     return (
         <div className="dashboard-layout">
@@ -30,90 +64,113 @@ function DashboardAdmin() {
             <div className="main-content">
                 <TopBar />
                 <div className="content-body" style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
-                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>DASHBOARD HỆ THỐNG (ADMIN)</h2>
 
-                    {/* HÀNG 1: THỐNG KÊ TỔNG QUAN */}
-                    <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-                        <div style={cardPrimary}>
-                            <p style={labelStyle}>TỔNG SỐ TÀI KHOẢN</p>
-                            <h2 style={valueStyle}>{stats.totalAccounts}</h2>
-                        </div>
-                        <div style={cardSuccess}>
-                            <p style={labelStyle}>ĐANG HOẠT ĐỘNG (ACTIVE)</p>
-                            <h2 style={valueStyle}>{stats.activeAccounts}</h2>
-                        </div>
-                        <div style={cardDanger}>
-                            <p style={labelStyle}>ĐANG BỊ KHÓA (LOCKED)</p>
-                            <h2 style={valueStyle}>{stats.lockedAccounts}</h2>
-                        </div>
-                    </div>
+                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px', textTransform: 'uppercase' }}>
+                        DASHBOARD HỆ THỐNG (ADMIN)
+                    </h2>
 
-                    {/* HÀNG 2: BIỂU ĐỒ & NHẬT KÝ */}
-                    <div style={{ display: 'flex', gap: '20px' }}>
-                        {/* Biểu đồ phân bổ quyền */}
-                        <div style={{ flex: 1, backgroundColor: '#fff', padding: '30px', borderRadius: '20px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
-                            <h4 style={{ color: '#1b2559', fontWeight: 'bold', marginBottom: '20px' }}>Phân bổ quyền (Roles)</h4>
-                            <ResponsiveContainer width="100%" height={250}>
-                                <PieChart>
-                                    <Pie
-                                        data={stats.rolesData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {stats.rolesData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend verticalAlign="bottom" height={36}/>
-                                </PieChart>
-                            </ResponsiveContainer>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '50px', color: '#4318ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                            ⏳ Đang tính toán dữ liệu hệ thống...
                         </div>
-
-                        {/* Nhật ký hoạt động gần đây */}
-                        <div style={{ flex: 1.5, backgroundColor: '#fff', padding: '30px', borderRadius: '20px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <h4 style={{ color: '#1b2559', fontWeight: 'bold', margin: 0 }}>Nhật ký hoạt động mới nhất</h4>
-                                <a href="/system-logs" style={{ color: '#4318ff', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold' }}>Xem tất cả &rarr;</a>
+                    ) : (
+                        <>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '25px' }}>
+                                <div style={{ backgroundColor: '#4318ff', borderRadius: '20px', padding: '25px', color: 'white', boxShadow: '0px 10px 20px rgba(67, 24, 255, 0.2)' }}>
+                                    <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.9 }}>Tổng số tài khoản</h4>
+                                    <h1 style={{ margin: 0, fontSize: '3rem', fontWeight: '900' }}>{totalAccounts}</h1>
+                                </div>
+                                <div style={{ backgroundColor: '#05cd99', borderRadius: '20px', padding: '25px', color: 'white', boxShadow: '0px 10px 20px rgba(5, 205, 153, 0.2)' }}>
+                                    <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.9 }}>Đang hoạt động (Active)</h4>
+                                    <h1 style={{ margin: 0, fontSize: '3rem', fontWeight: '900' }}>{activeAccounts}</h1>
+                                </div>
+                                <div style={{ backgroundColor: '#ff5630', borderRadius: '20px', padding: '25px', color: 'white', boxShadow: '0px 10px 20px rgba(255, 86, 48, 0.2)' }}>
+                                    <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.9 }}>Đang bị khóa (Locked)</h4>
+                                    <h1 style={{ margin: 0, fontSize: '3rem', fontWeight: '900' }}>{lockedAccounts}</h1>
+                                </div>
                             </div>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', color: '#475569' }}>
-                                <thead>
-                                <tr style={{ borderBottom: '2px solid #f4f7fe', textAlign: 'left' }}>
-                                    <th style={{ padding: '10px 0', fontSize: '14px' }}>THỜI GIAN</th>
-                                    <th style={{ padding: '10px 0', fontSize: '14px' }}>HÀNH ĐỘNG</th>
-                                    <th style={{ padding: '10px 0', fontSize: '14px' }}>USER</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {stats.recentLogs.map((log) => (
-                                    <tr key={log.id} style={{ borderBottom: '1px solid #f4f7fe' }}>
-                                        <td style={{ padding: '15px 0', fontSize: '14px' }}>{log.time}</td>
-                                        <td style={{ padding: '15px 0', fontSize: '14px', fontWeight: '500', color: '#1b2559' }}>{log.action}</td>
-                                        <td style={{ padding: '15px 0', fontSize: '14px' }}>
-                                            <span style={{ backgroundColor: '#f4f7fe', padding: '5px 10px', borderRadius: '5px', fontWeight: 'bold' }}>{log.user}</span>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
 
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '20px' }}>
+
+                                {/* Biểu đồ */}
+                                <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
+                                    <h3 style={{ color: '#1b2559', fontWeight: 'bold', fontSize: '1.1rem', margin: '0 0 20px 0' }}>Phân bổ quyền (Roles)</h3>
+                                    <div style={{ width: '100%', height: '250px' }}>
+                                        <ResponsiveContainer>
+                                            <PieChart>
+                                                <Pie data={pieData} innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value" stroke="none">
+                                                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                                                </Pie>
+                                                <Tooltip formatter={(value, name) => [`${value} tài khoản`, name]} contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0px 10px 20px rgba(0,0,0,0.1)' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '15px', marginTop: '10px' }}>
+                                        {pieData.map((item, index) => (
+                                            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', color: item.color, fontWeight: 'bold' }}>
+                                                <div style={{ width: '12px', height: '12px', backgroundColor: item.color, borderRadius: '3px' }}></div>
+                                                {item.name} ({item.value})
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Bảng Logs có phân trang */}
+                                <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                        <h3 style={{ color: '#1b2559', fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Nhật ký hoạt động mới nhất</h3>
+                                        <span onClick={() => navigate('/system-logs')} style={{ color: '#4318ff', fontSize: '0.9rem', fontWeight: 'bold', cursor: 'pointer' }}>Xem tất cả →</span>
+                                    </div>
+
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', flex: 1 }}>
+                                        <thead>
+                                        <tr style={{ borderBottom: '2px solid #f4f7fe', color: '#a3aed0', textAlign: 'left', fontSize: '0.85rem' }}>
+                                            <th style={{ padding: '15px 10px', fontWeight: 'bold' }}>THỜI GIAN</th>
+                                            <th style={{ padding: '15px 10px', fontWeight: 'bold' }}>HÀNH ĐỘNG</th>
+                                            <th style={{ padding: '15px 10px', fontWeight: 'bold' }}>USER</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {currentLogs.map((log, index) => (
+                                            <tr key={index} style={{ borderBottom: '1px solid #f4f7fe', color: '#2b3674' }}>
+                                                <td style={{ padding: '15px 10px', fontSize: '0.9rem' }}>{log.thoi_gian}</td>
+                                                <td style={{ padding: '15px 10px', fontSize: '0.95rem', fontWeight: '600' }}>{log.hanh_dong}</td>
+                                                <td style={{ padding: '15px 10px' }}>
+                                                        <span style={{ backgroundColor: '#f4f7fe', color: '#4318ff', padding: '5px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                                            {log.nguoi_dung || 'System'}
+                                                        </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+
+                                    {/* Nút Phân Trang (Chỉ hiện khi có nhiều hơn 1 trang) */}
+                                    {totalPages > 1 && (
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '15px' }}>
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                                                <button
+                                                    key={number}
+                                                    onClick={() => setCurrentPage(number)}
+                                                    style={{
+                                                        padding: '6px 12px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer',
+                                                        backgroundColor: currentPage === number ? '#4318ff' : '#f4f7fe',
+                                                        color: currentPage === number ? 'white' : '#a3aed0'
+                                                    }}
+                                                >
+                                                    {number}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
 
-// Các style tái sử dụng
-const labelStyle = { fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '10px', opacity: 0.8 };
-const valueStyle = { fontSize: '2.4rem', fontWeight: '800', margin: 0 };
-const cardPrimary = { flex: 1, background: 'linear-gradient(90deg, #4318ff 0%, #5e3aff 100%)', borderRadius: '20px', padding: '30px', color: '#fff', boxShadow: '0px 18px 40px rgba(67, 24, 255, 0.2)' };
-const cardSuccess = { flex: 1, background: 'linear-gradient(90deg, #05cd99 0%, #04b688 100%)', borderRadius: '20px', padding: '30px', color: '#fff', boxShadow: '0px 18px 40px rgba(5, 205, 153, 0.2)' };
-const cardDanger = { flex: 1, background: 'linear-gradient(90deg, #f65160 0%, #e54655 100%)', borderRadius: '20px', padding: '30px', color: '#fff', boxShadow: '0px 18px 40px rgba(246, 81, 96, 0.2)' };
-
-export default DashboardAdmin;
+export default AdminDashboardPage;

@@ -17,18 +17,29 @@ function LoginPage() {
                 username: user,
                 password: pass
             });
+
             if (response.data.success) {
+                // LƯU TRỮ TOÀN BỘ THÔNG TIN QUAN TRỌNG VÀO LOCAL STORAGE
                 localStorage.setItem('username', user);
-                localStorage.setItem('role', response.data.role); // Save role for Sidebar
+                localStorage.setItem('role', response.data.role);
+
+                // BỔ SUNG: Lưu thêm ID và Tên để dùng cho các trang cá nhân & TopBar
+                if (response.data.employeeId) {
+                    localStorage.setItem('employeeId', response.data.employeeId);
+                }
+                if (response.data.employeeName) {
+                    localStorage.setItem('fullName', response.data.employeeName);
+                }
+
                 navigate('/dashboard');
             } else {
-                setErrorMsg(response.data.message || 'sai tên username hoặc password');
+                setErrorMsg(response.data.message || 'Sai username hoặc password');
             }
         } catch (error) {
             if (error.response && error.response.data && error.response.data.message) {
                 setErrorMsg(error.response.data.message);
             } else {
-                setErrorMsg('sai tên username hoặc password');
+                setErrorMsg('Sai username hoặc password');
             }
         }
     };
@@ -37,7 +48,7 @@ function LoginPage() {
         <div className="login-page">
             <div className="login-card">
                 <h2>HỆ THỐNG NHÂN SỰ</h2>
-                {errorMsg && <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>{errorMsg}</div>}
+                {errorMsg && <div className="error-message" style={{ color: 'red', marginBottom: '10px', textAlign: 'center', fontWeight: 'bold' }}>{errorMsg}</div>}
                 <form onSubmit={handleLogin}>
                     <div className="input-group">
                         <label>Username</label>

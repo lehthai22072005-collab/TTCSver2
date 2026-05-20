@@ -115,7 +115,7 @@ function DashboardTeacher() {
                     <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '20px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
                         <h4 style={{ color: '#1b2559', fontWeight: 'bold', marginBottom: '20px' }}>Xin chào {userName}!</h4>
                         <p style={{ color: '#475569', lineHeight: '1.8' }}>
-                            Chào mừng bạn đến với Cổng thông tin dành cho Giảng viên. Hệ thống tự động liên thông dữ liệu đơn từ nghỉ phép trực tuyến gửi Ban Giám Hiệu.
+                            Chào mừng bạn đến với Cổng thông tin của hệ thống. Hệ thống tự động liên thông dữ liệu đơn từ nghỉ phép trực tuyến gửi Ban Giám Hiệu.
                         </p>
                     </div>
                 </div>

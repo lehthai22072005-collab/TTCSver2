@@ -60,16 +60,22 @@ function AccountManagementPage() {
         }
         setShowModal(true);
     };
-
     const handleSave = async () => {
         try {
+            // Lấy tên người đang đăng nhập (ví dụ: admin_thai)
+            const currentUser = localStorage.getItem('username') || 'System';
+
+            // Đính kèm vào dữ liệu gửi đi
+            const payload = { ...formData, actionBy: currentUser };
+
             const endpoint = isEditMode ? '/update' : '/create';
-            await axios.post(`http://localhost:8080/api/accounts${endpoint}`, formData);
-            alert(isEditMode ? "Cập nhật thành công!" : "Tạo mới thành công!");
+            await axios.post(`http://localhost:8080/api/accounts${endpoint}`, payload);
+
+            alert("✅ Xử lý thành công!");
             setShowModal(false);
             fetchAccounts();
         } catch (err) {
-            alert(err.response?.data?.message || "Có lỗi xảy ra!");
+            alert(err.response?.data?.message || "❌ Có lỗi xảy ra!");
             console.error(err);
         }
     };
@@ -77,10 +83,13 @@ function AccountManagementPage() {
     const handleToggleStatus = async (account) => {
         if(window.confirm(`Bạn có chắc muốn ${account.status === 'Active' ? 'khóa' : 'mở khóa'} user ${account.username}?`)) {
             try {
+                const currentUser = localStorage.getItem('username') || 'System';
+
                 await axios.post('http://localhost:8080/api/accounts/toggle-status', {
                     username: account.username,
                     role: account.role,
-                    status: account.status
+                    status: account.status,
+                    actionBy: currentUser // Đính kèm người thực hiện
                 });
                 fetchAccounts();
             } catch (err) {

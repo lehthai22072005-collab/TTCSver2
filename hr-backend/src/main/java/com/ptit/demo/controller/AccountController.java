@@ -32,7 +32,21 @@ public class AccountController {
         }
     }
 
-    // 1. LẤY DANH SÁCH (Đã thêm lấy e.id để Frontend nhận diện được nhân viên)
+    // --- HÀM HỖ TRỢ GHI LOG TỰ ĐỘNG ---
+    private void ghiLogHeThong(String hanhDong, String nguoiDung) {
+        try {
+            // Lấy thời gian hiện tại chuẩn định dạng "HH:mm dd/MM/yyyy"
+            String thoiGian = new java.text.SimpleDateFormat("HH:mm dd/MM/yyyy").format(new java.util.Date());
+
+            // Lưu vào bảng system_logs. (Nếu tên cột của bạn khác, hãy sửa lại cho khớp nhé)
+            String sql = "INSERT INTO system_logs (thoi_gian, hanh_dong, nguoi_dung) VALUES (?, ?, ?)";
+            jdbcTemplate.update(sql, thoiGian, hanhDong, nguoiDung);
+        } catch (Exception e) {
+            System.out.println("Lỗi ghi log: " + e.getMessage());
+        }
+    }
+
+    // 1. LẤY DANH SÁCH
     @GetMapping("/list")
     public ResponseEntity<?> getAllAccounts() {
         try {
@@ -55,39 +69,33 @@ public class AccountController {
 
             List<Map<String, Object>> accounts = jdbcTemplate.query(sql, (rs, rowNum) -> {
                 Map<String, Object> map = new HashMap<>();
-
-                map.put("employeeId", rs.getString("employee_id")); // QUAN TRỌNG: Lấy ID gửi về React
-
+                map.put("employeeId", rs.getString("employee_id"));
                 String username = rs.getString("username");
                 map.put("username", username != null ? username : "[ Chưa có tài khoản ]");
                 map.put("fullName", rs.getString("full_name"));
                 map.put("email", rs.getString("email"));
                 map.put("role", rs.getString("role"));
-
                 String status = rs.getString("status");
                 map.put("status", status.equals("No Account") ? "Chưa kích hoạt" : status);
-
                 return map;
             });
             return ResponseEntity.ok(accounts);
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.badRequest().body("Lỗi lấy danh sách: " + e.getMessage());
         }
     }
 
-    // 2. TẠO TÀI KHOẢN MỚI (Thông minh: Xử lý cả cấp cho người cũ và tạo người mới)
+    // 2. TẠO TÀI KHOẢN MỚI
     @PostMapping("/create")
     public ResponseEntity<?> createAccount(@RequestBody Map<String, String> data) {
         try {
             Long empId;
             String empIdStr = data.get("employeeId");
+            String actionBy = data.get("actionBy"); // Lấy người thực hiện từ Frontend
 
-            // Nếu frontend gửi lên employeeId -> Tức là cấp tài khoản cho người đã có sẵn (như thai ngau loi)
             if (empIdStr != null && !empIdStr.trim().isEmpty()) {
                 empId = Long.parseLong(empIdStr);
             } else {
-                // Nếu không có employeeId -> Nút [+ Tạo User] -> Tạo mới hoàn toàn 1 nhân viên vào DB
                 Employee emp = new Employee();
                 emp.setFullName(data.get("fullName"));
                 emp.setEmail(data.get("email"));
@@ -99,9 +107,11 @@ public class AccountController {
             String sql = "INSERT INTO " + table + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)";
             jdbcTemplate.update(sql, data.get("username"), data.get("password"), empId, data.get("status") != null ? data.get("status") : "Active");
 
+            // GỌI HÀM GHI LOG
+            ghiLogHeThong("Tạo tài khoản mới: " + data.get("username"), actionBy);
+
             return ResponseEntity.ok(Map.of("message", "Tạo tài khoản thành công!"));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo User: " + e.getMessage()));
         }
     }
@@ -116,6 +126,7 @@ public class AccountController {
             String username = data.get("username");
             String password = data.get("password");
             String status = data.get("status");
+            String actionBy = data.get("actionBy");
 
             String oldTable = getTableName(oldRole);
             String newTable = getTableName(newRole);
@@ -141,9 +152,12 @@ public class AccountController {
                     jdbcTemplate.update("UPDATE " + oldTable + " SET password = ? WHERE username = ?", password, username);
                 }
             }
+
+            // GỌI HÀM GHI LOG
+            ghiLogHeThong("Cập nhật tài khoản: " + oldUsername, actionBy);
+
             return ResponseEntity.ok(Map.of("message", "Cập nhật tài khoản thành công!"));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi cập nhật: " + e.getMessage()));
         }
     }
@@ -156,14 +170,69 @@ public class AccountController {
             String role = data.get("role");
             String currentStatus = data.get("status");
             String newStatus = currentStatus.equals("Active") ? "Locked" : "Active";
+            String actionBy = data.get("actionBy");
 
             String sql = "UPDATE " + getTableName(role) + " SET status = ? WHERE username = ?";
             jdbcTemplate.update(sql, newStatus, username);
 
+            // GỌI HÀM GHI LOG
+            String actionName = (newStatus.equals("Locked") ? "Khóa" : "Mở khóa") + " tài khoản: " + username;
+            ghiLogHeThong(actionName, actionBy);
+
             return ResponseEntity.ok(Map.of("message", "Đã thay đổi trạng thái!"));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi DB: " + e.getMessage()));
+        }
+    }
+    // 5. API CHUYÊN LẤY NHẬT KÝ HOẠT ĐỘNG
+    @GetMapping("/logs")
+    public ResponseEntity<?> getSystemLogs() {
+        try {
+            // ĐÃ FIX: Bỏ LIMIT 5 để Frontend tự do phân trang toàn bộ dữ liệu
+            String sql = "SELECT thoi_gian, hanh_dong, nguoi_dung FROM system_logs ORDER BY id DESC";
+            List<Map<String, Object>> logs = jdbcTemplate.queryForList(sql);
+            return ResponseEntity.ok(logs);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi lấy log: " + e.getMessage()));
+        }
+    }
+    // 6. ĐỔI MẬT KHẨU CÁ NHÂN (Dành cho user tự đổi)
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> data) {
+        try {
+            String username = data.get("username");
+            String role = data.get("role"); // Nhận Role từ Frontend (ADMIN, ACCOUNTANT, TEACHER, STAFF, DIRECTOR)
+            String oldPassword = data.get("oldPassword");
+            String newPassword = data.get("newPassword");
+
+            // Xác định đúng bảng trong Database dựa trên Role
+            String table = "staff"; // Mặc định là TEACHER hoặc STAFF
+            if ("ADMIN".equals(role)) table = "admin";
+            else if ("ACCOUNTANT".equals(role)) table = "accountant";
+            else if ("DIRECTOR".equals(role)) table = "ban_giam_hieu";
+
+            // 1. Kiểm tra mật khẩu cũ có khớp không
+            String sqlCheck = "SELECT password FROM " + table + " WHERE username = ?";
+            List<String> passwords = jdbcTemplate.queryForList(sqlCheck, String.class, username);
+
+            if (passwords.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("message", "Lỗi: Không tìm thấy tài khoản trong CSDL!"));
+            }
+            if (!passwords.get(0).equals(oldPassword)) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Mật khẩu hiện tại không chính xác!"));
+            }
+
+            // 2. Cập nhật mật khẩu mới
+            String sqlUpdate = "UPDATE " + table + " SET password = ? WHERE username = ?";
+            jdbcTemplate.update(sqlUpdate, newPassword, username);
+
+            // 3. Tự động ghi Log hệ thống
+            ghiLogHeThong("Đổi mật khẩu cá nhân", username);
+
+            return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
 }

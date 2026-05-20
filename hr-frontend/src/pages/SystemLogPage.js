@@ -1,67 +1,140 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function SystemLogPage() {
-    // Dữ liệu mẫu khớp với Wireframe 5
-    const [logs] = useState([
-        { time: '10:00', action: 'Login', user: 'thai' },
-        { time: '10:05', action: 'Khóa user nam', user: 'admin' },
-        { time: '10:10', action: 'Update config', user: 'admin' },
-        { time: '11:20', action: 'Tạo tài khoản mới', user: 'thai' },
-    ]);
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // --- PHÂN TRANG ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const logsPerPage = 10; // Trang riêng biệt nên cho hiện nhiều hơn (10 dòng)
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const res = await axios.get('http://localhost:8080/api/accounts/logs');
+                setLogs(res.data);
+                setLoading(false);
+            } catch (err) {
+                console.error("Lỗi khi tải nhật ký:", err);
+                setLoading(false);
+            }
+        };
+        fetchLogs();
+    }, []);
+
+    // --- XỬ LÝ DỮ LIỆU PHÂN TRANG ---
+    const indexOfLastLog = currentPage * logsPerPage;
+    const indexOfFirstLog = indexOfLastLog - logsPerPage;
+    const currentLogs = logs.slice(indexOfFirstLog, indexOfLastLog);
+    const totalPages = Math.ceil(logs.length / logsPerPage);
 
     return (
         <div className="dashboard-layout">
             <Sidebar />
             <div className="main-content">
                 <TopBar />
-                <div className="content-body">
-                    {/* Tiêu đề in hoa có gạch chân chuẩn Wireframe */}
-                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
-                        <h2 style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>System Logs</h2>
-                    </div>
+                <div className="content-body" style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
 
-                    {/* Bảng nhật ký hệ thống */}
-                    <div className="card shadow-sm" style={{ backgroundColor: '#fff', borderRadius: '4px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                        <table className="data-table" style={{ marginTop: 0 }}>
-                            <thead style={{ backgroundColor: '#f8fafc' }}>
-                            <tr>
-                                <th style={{ width: '150px' }}>Thời gian</th>
-                                <th>Hành động</th>
-                                <th style={{ width: '200px' }}>Người thực hiện</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {logs.map((log, index) => (
-                                <tr key={index}>
-                                    <td style={{ color: '#64748b' }}>{log.time}</td>
-                                    <td style={{ fontWeight: '500' }}>{log.action}</td>
-                                    <td>
-                                            <span style={{
-                                                padding: '4px 12px',
-                                                backgroundColor: '#f1f5f9',
-                                                borderRadius: '15px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: 'bold',
-                                                color: '#475569'
-                                            }}>
-                                                {log.user}
-                                            </span>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px', textTransform: 'uppercase' }}>
+                        LỊCH SỬ HOẠT ĐỘNG HỆ THỐNG
+                    </h2>
 
-                    <p style={{ marginTop: '15px', color: '#94a3b8', fontSize: '0.9rem italic' }}>
-                        * Hiển thị 10 dòng nhật ký gần nhất của hệ thống.
-                    </p>
+                    <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '30px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.06)' }}>
+                        {loading ? (
+                            <div style={{ textAlign: 'center', padding: '30px', color: '#4318ff', fontWeight: 'bold' }}>
+                                ⏳ Đang tải lịch sử hệ thống...
+                            </div>
+                        ) : (
+                            <>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                    <tr style={{ borderBottom: '2px solid #f4f7fe', color: '#a3aed0', textAlign: 'left', fontSize: '0.85rem' }}>
+                                        <th style={{ padding: '15px 10px', textTransform: 'uppercase', fontWeight: '700' }}>THỜI GIAN</th>
+                                        <th style={{ padding: '15px 10px', textTransform: 'uppercase', fontWeight: '700' }}>HÀNH ĐỘNG</th>
+                                        <th style={{ padding: '15px 10px', textTransform: 'uppercase', fontWeight: '700' }}>NGƯỜI THỰC HIỆN</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {currentLogs.map((log, index) => (
+                                        <tr key={index} style={{ borderBottom: '1px solid #f4f7fe' }}>
+                                            <td style={{ padding: '18px 10px', fontSize: '0.95rem', color: '#a3aed0', fontWeight: '600' }}>
+                                                {log.thoi_gian}
+                                            </td>
+                                            <td style={{ padding: '18px 10px', fontSize: '1rem', color: '#1b2559', fontWeight: '700' }}>
+                                                {log.hanh_dong}
+                                            </td>
+                                            <td style={{ padding: '18px 10px' }}>
+                                                    <span style={{ backgroundColor: '#f4f7fe', color: '#4318ff', padding: '6px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                                        {log.nguoi_dung || 'System'}
+                                                    </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {logs.length === 0 && (
+                                        <tr>
+                                            <td colSpan="3" style={{ textAlign: 'center', padding: '40px', color: '#a3aed0' }}>
+                                                Hệ thống chưa ghi nhận hoạt động nào.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </tbody>
+                                </table>
+
+                                {/* KHỐI PHÂN TRANG (PAGINATION) DƯỚI ĐÁY BẢNG */}
+                                {totalPages > 1 && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '25px' }}>
+                                        <button
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(currentPage - 1)}
+                                            style={pageBtn(currentPage === 1)}
+                                        >
+                                            « Trước
+                                        </button>
+
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                                            <button
+                                                key={number}
+                                                onClick={() => setCurrentPage(number)}
+                                                style={{
+                                                    padding: '8px 15px', borderRadius: '10px', border: 'none', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s',
+                                                    backgroundColor: currentPage === number ? '#4318ff' : '#f4f7fe',
+                                                    color: currentPage === number ? 'white' : '#a3aed0'
+                                                }}
+                                            >
+                                                {number}
+                                            </button>
+                                        ))}
+
+                                        <button
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(currentPage + 1)}
+                                            style={pageBtn(currentPage === totalPages)}
+                                        >
+                                            Sau »
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
+
+// Style tái sử dụng cho nút "Trước/Sau"
+const pageBtn = (disabled) => ({
+    padding: '8px 15px',
+    borderRadius: '10px',
+    border: 'none',
+    fontWeight: 'bold',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    backgroundColor: '#f4f7fe',
+    color: disabled ? '#cbd5e1' : '#1b2559',
+});
 
 export default SystemLogPage;

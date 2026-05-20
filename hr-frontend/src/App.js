@@ -6,9 +6,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardAdmin from './pages/DashboardAdmin';
 import DashboardAccountant from './pages/DashboardAccountant';
 import DashboardTeacher from './pages/DashboardTeacher';
-import DashboardDirector from './pages/DashboardDirector'; // 1. IMPORT Ở ĐÂY
+import DashboardDirector from './pages/DashboardDirector';
 
-// ... các trang khác giữ nguyên ...
 import EmployeePage from './pages/EmployeePage';
 import AttendancePage from './pages/AttendancePage';
 import ContractPage from './pages/ContractPage';
@@ -36,9 +35,13 @@ const DashboardRouter = () => {
 
     if (role === 'ADMIN') return <DashboardAdmin />;
     if (role === 'ACCOUNTANT') return <DashboardAccountant />;
-    if (role === 'TEACHER') return <DashboardTeacher />;
-    if (role === 'DIRECTOR') return <DashboardDirector />; // 2. MỞ KHÓA Ở ĐÂY
 
+    // ĐÃ FIX: Cho phép cả TEACHER và STAFF dùng chung Dashboard cá nhân
+    if (role === 'TEACHER' || role === 'STAFF') return <DashboardTeacher />;
+
+    if (role === 'DIRECTOR') return <DashboardDirector />;
+
+    // Nếu không khớp role nào, đẩy về trang đăng nhập
     return <Navigate to="/" />;
 };
 
@@ -49,7 +52,6 @@ function App() {
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/dashboard" element={<DashboardRouter />} />
 
-                {/* Giữ nguyên toàn bộ Route bên dưới của bạn */}
                 <Route path="/payment-history/detail/:month" element={<PaymentDetailPage />} />
                 <Route path="/employees" element={<EmployeePage />} />
                 <Route path="/attendance" element={<AttendancePage />} />
@@ -65,6 +67,7 @@ function App() {
                 <Route path="/approvals" element={<ApprovalsPage />} />
                 <Route path="/hr-reports" element={<HrReportsPage />} />
                 <Route path="/salary-fund" element={<SalaryFundPage />} />
+
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/my-attendance" element={<MyAttendancePage />} />
                 <Route path="/my-salary" element={<MySalaryPage />} />
