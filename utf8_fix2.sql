@@ -1,1 +1,0 @@
-﻿UPDATE teaching_declaration SET trang_thai = 'ĐÃ DUYỆT' WHERE id = 3;

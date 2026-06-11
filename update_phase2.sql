@@ -1,2 +1,0 @@
-ALTER TABLE bang_luong ADD COLUMN he_so_luong DECIMAL(5,2) DEFAULT 1.0;
-ALTER TABLE bang_luong ADD COLUMN tien_giang_day DECIMAL(15,2) DEFAULT 0;

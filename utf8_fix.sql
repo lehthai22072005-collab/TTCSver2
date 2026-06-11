@@ -1,1 +1,0 @@
-﻿UPDATE employee SET nhom_nhan_su = 'Giảng viên' WHERE id = 1;
