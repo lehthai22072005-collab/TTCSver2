@@ -93,17 +93,19 @@ function DashboardTeacher() {
             <div className="main-content">
                 <TopBar />
                 <div className="content-body" style={{ padding: '30px', backgroundColor: '#f4f7fe', minHeight: '100vh' }}>
-                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>
-                        DASHBOARD GIẢNG VIÊN
+                    <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px', textTransform: 'uppercase' }}>
+                        DASHBOARD {role === 'TEACHER' ? 'GIẢNG VIÊN' : 'NHÂN VIÊN CÁN BỘ'}
                     </h2>
 
                     <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-                        <div style={cardPrimary}>
-                            <p style={labelStyle}>SỐ TIẾT DẠY ({thangHienTai})</p>
-                            <h2 style={valueStyle}>
-                                {loading ? '...' : `${tietDay} Tiết`}
-                            </h2>
-                        </div>
+                        {role === 'TEACHER' && (
+                            <div style={cardPrimary}>
+                                <p style={labelStyle}>SỐ TIẾT DẠY ({thangHienTai})</p>
+                                <h2 style={valueStyle}>
+                                    {loading ? '...' : `${tietDay} Tiết`}
+                                </h2>
+                            </div>
+                        )}
                         <div style={cardSuccess}>
                             <p style={labelStyle}>NGÀY PHÉP CÒN LẠI TRONG NĂM</p>
                             <h2 style={valueStyle}>

@@ -31,6 +31,9 @@ public class AuthController {
     private DirectorRepository directorRepository;
 
     @Autowired
+    private HrRepository hrRepository;
+
+    @Autowired
     private SystemConfigService configService;
 
     @Autowired
@@ -91,7 +94,7 @@ public class AuthController {
             String finalRole = "STAFF";
 
             if (staffAccount.getEmployee() != null &&
-                    "Giảng viên".equalsIgnoreCase(staffAccount.getEmployee().getPosition())) {
+                    "Giảng viên".equalsIgnoreCase(staffAccount.getEmployee().getNhomNhanSu())) {
                 finalRole = "TEACHER";
             }
 
@@ -133,6 +136,22 @@ public class AuthController {
                     "DIRECTOR",
                     director.getEmployee() != null ? director.getEmployee().getId() : null,
                     director.getEmployee() != null ? director.getEmployee().getFullName() : "Ban Giám Hiệu"
+            ));
+        }
+
+        Optional<Hr> hrOpt = hrRepository.findByUsername(username);
+
+        if (hrOpt.isPresent() && hrOpt.get().getPassword().equals(password)) {
+            resetFailCount(username);
+
+            Hr hr = hrOpt.get();
+
+            return ResponseEntity.ok(new LoginResponse(
+                    true,
+                    "Đăng nhập thành công",
+                    "HR",
+                    hr.getEmployee() != null ? hr.getEmployee().getId() : null,
+                    hr.getEmployee() != null ? hr.getEmployee().getFullName() : "Phòng nhân sự"
             ));
         }
 

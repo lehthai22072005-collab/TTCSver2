@@ -99,11 +99,11 @@ function MyAttendancePage() {
 
                                 {/* THANH ĐIỀU HƯỚNG PHÂN TRANG */}
                                 {totalPages > 1 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
-                                        <span style={{ color: '#a3aed0', fontSize: '0.9rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '15px', marginTop: '20px' }}>
+                                        <span style={{ color: '#a3aed0', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
                                             Đang hiển thị {indexOfFirstItem + 1} đến {Math.min(indexOfLastItem, attendanceList.length)} trong tổng số {attendanceList.length} bản ghi
                                         </span>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                             <button
                                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                                 disabled={currentPage === 1}

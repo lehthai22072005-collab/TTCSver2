@@ -36,6 +36,7 @@ public class AccountController {
             case "Kế toán": return "accountant";
             case "Nhân viên": return "staff";
             case "Ban Giám Hiệu": return "ban_giam_hieu";
+            case "Phòng nhân sự": return "human_resources";
             default: return "staff";
         }
     }
@@ -60,20 +61,22 @@ public class AccountController {
         try {
             String sql =
                     "SELECT e.id as employee_id, e.full_name, e.email, " +
-                            "COALESCE(a.username, c.username, s.username, b.username) as username, " +
+                            "COALESCE(a.username, c.username, s.username, b.username, h.username) as username, " +
                             "CASE " +
                             "WHEN a.username IS NOT NULL THEN 'Admin' " +
                             "WHEN c.username IS NOT NULL THEN 'Kế toán' " +
                             "WHEN b.username IS NOT NULL THEN 'Ban Giám Hiệu' " +
+                            "WHEN h.username IS NOT NULL THEN 'Phòng nhân sự' " +
                             "WHEN s.username IS NOT NULL THEN 'Nhân viên' " +
                             "ELSE 'Chưa cấp quyền' " +
                             "END as role, " +
-                            "COALESCE(a.status, c.status, s.status, b.status, 'No Account') as status " +
+                            "COALESCE(a.status, c.status, s.status, b.status, h.status, 'No Account') as status " +
                             "FROM employee e " +
                             "LEFT JOIN admin a ON e.id = a.employee_id " +
                             "LEFT JOIN accountant c ON e.id = c.employee_id " +
                             "LEFT JOIN staff s ON e.id = s.employee_id " +
-                            "LEFT JOIN ban_giam_hieu b ON e.id = b.employee_id";
+                            "LEFT JOIN ban_giam_hieu b ON e.id = b.employee_id " +
+                            "LEFT JOIN human_resources h ON e.id = h.employee_id";
 
             List<Map<String, Object>> accounts = jdbcTemplate.query(sql, (rs, rowNum) -> {
                 Map<String, Object> map = new HashMap<>();
@@ -266,6 +269,8 @@ public class AccountController {
                 table = "accountant";
             } else if ("DIRECTOR".equals(role)) {
                 table = "ban_giam_hieu";
+            } else if ("HR".equals(role)) {
+                table = "human_resources";
             }
 
             String sqlCheck = "SELECT password FROM " + table + " WHERE username = ?";

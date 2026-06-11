@@ -185,6 +185,7 @@ function AccountManagementPage() {
                                         <option value="Kế toán">Kế toán</option>
                                         <option value="Nhân viên">Nhân viên</option>
                                         <option value="Ban Giám Hiệu">Ban Giám Hiệu</option>
+                                        <option value="Phòng nhân sự">Phòng nhân sự</option>
                                     </select>
                                 </div>
                                 <div style={{ marginBottom: '20px' }}>

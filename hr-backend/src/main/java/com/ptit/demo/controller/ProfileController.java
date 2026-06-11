@@ -15,6 +15,7 @@ public class ProfileController {
     @Autowired private AccountantRepository accountantRepo;
     @Autowired private TeacherRepository teacherRepo;
     @Autowired private DirectorRepository directorRepo;
+    @Autowired private HrRepository hrRepo;
 
     @GetMapping("/{role}/{username}")
     public ResponseEntity<?> getProfile(@PathVariable String role, @PathVariable String username) {
@@ -33,6 +34,8 @@ public class ProfileController {
                 emp = teacherRepo.findByUsername(username).map(t -> t.getEmployee()).orElse(null);
             } else if ("DIRECTOR".equals(safeRole)) {
                 emp = directorRepo.findByUsername(username).map(d -> d.getEmployee()).orElse(null);
+            } else if ("HR".equals(safeRole)) {
+                emp = hrRepo.findByUsername(username).map(h -> h.getEmployee()).orElse(null);
             }
         } catch (Exception e) {
             System.out.println("===> [LỖI DB PROFILE]: " + e.getMessage());

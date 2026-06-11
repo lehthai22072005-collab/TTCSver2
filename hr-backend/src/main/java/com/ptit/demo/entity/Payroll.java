@@ -46,4 +46,16 @@ public class Payroll {
 
     @Column(name = "tiet_day")
     private Integer tietDay;
+
+    @Column(name = "he_so_luong")
+    private BigDecimal heSoLuong;
+
+    @Column(name = "tien_giang_day")
+    private BigDecimal tienGiangDay;
+
+    @Column(name = "tien_thuong")
+    private BigDecimal tienThuong;
+
+    @Column(name = "tien_phat")
+    private BigDecimal tienPhat;
 }

@@ -4,8 +4,10 @@ import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function SalaryPage() {
-    // Mặc định chọn tháng mới nhất để tiện thao tác test
-    const [month, setMonth] = useState('04/2026');
+    const currentMonthNum = new Date().getMonth() + 1;
+    const currentYearNum = new Date().getFullYear();
+    const formattedCurrentMonth = `${String(currentMonthNum).padStart(2, '0')}/${currentYearNum}`;
+    const [month, setMonth] = useState(formattedCurrentMonth);
     const [salaryPreview, setSalaryPreview] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -40,10 +42,15 @@ function SalaryPage() {
         }
     };
 
-    // VÒNG LẶP TỰ ĐỘNG TẠO MẢNG CHỨA 12 THÁNG NĂM 2026
+    const handleExportExcel = () => {
+        // Mở URL export trong tab mới để trình duyệt tải file về
+        window.open(`http://localhost:8080/api/salary/export?month=${month}`, '_blank');
+    };
+
+    // VÒNG LẶP TỰ ĐỘNG TẠO MẢNG CHỨA 12 THÁNG CỦA NĂM HIỆN TẠI
     const monthsArray = Array.from({ length: 12 }, (_, i) => {
         const monthNum = String(i + 1).padStart(2, '0');
-        return `${monthNum}/2026`;
+        return `${monthNum}/${currentYearNum}`;
     });
 
     return (
@@ -83,6 +90,13 @@ function SalaryPage() {
                             >
                                 Chốt lương 🔒
                             </button>
+
+                            <button
+                                onClick={handleExportExcel}
+                                style={{ padding: '10px 20px', backgroundColor: '#05cd99', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                Xuất Excel 📊
+                            </button>
                         </div>
 
                         <h4 style={{ color: '#2b3674', marginBottom: '20px', fontWeight: 'bold' }}>BẢNG LƯƠNG NHÁP</h4>
@@ -94,9 +108,13 @@ function SalaryPage() {
                                     <th style={{ padding: '15px', fontSize: '13px' }}>MÃ NV</th>
                                     <th style={{ padding: '15px', fontSize: '13px' }}>HỌ TÊN</th>
                                     <th style={{ padding: '15px', fontSize: '13px' }}>CÔNG TÍNH</th>
-                                    <th style={{ padding: '15px', fontSize: '13px' }}>TIẾT DẠY</th>
-                                    <th style={{ padding: '15px', fontSize: '13px' }}>LƯƠNG CB</th>
-                                    <th style={{ padding: '15px', fontSize: '13px' }}>TỔNG LĨNH</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>LƯƠNG CƠ BẢN</th>
+                                    <th style={{ padding: '15px', fontSize: '13px', color: '#4318ff' }}>HỆ SỐ</th>
+                                    <th style={{ padding: '15px', fontSize: '13px', color: '#ee5d50' }}>TIỀN GIẢNG DẠY</th>
+                                    <th style={{ padding: '15px' }}>THUẾ TNCN</th>
+                                    <th style={{ padding: '15px', color: '#05cd99' }}>THƯỞNG</th>
+                                    <th style={{ padding: '15px', color: '#ee5d50' }}>PHẠT</th>
+                                    <th style={{ padding: '15px', fontSize: '13px' }}>THỰC LĨNH</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -108,11 +126,19 @@ function SalaryPage() {
                                                 {s.employee?.fullName || "N/A"}
                                             </td>
                                             <td style={{ padding: '15px', color: '#2b3674' }}>{s.ngayCong || 0} ngày</td>
-                                            <td style={{ padding: '15px', color: '#2b3674' }}>{s.tietDay || 0} tiết</td>
                                             <td style={{ padding: '15px', color: '#2b3674' }}>
-                                                {(s.luongCoBan || 0).toLocaleString()}đ
+                                                {(s.employee?.baseSalary || 10000000).toLocaleString()}đ
                                             </td>
-                                            <td style={{ padding: '15px', color: '#05cd99', fontWeight: 'bold' }}>
+                                            <td style={{ padding: '15px', color: '#4318ff', fontWeight: 'bold' }}>
+                                                x {s.heSoLuong || 1.0}
+                                            </td>
+                                            <td style={{ padding: '15px', color: '#ee5d50', fontWeight: 'bold' }}>
+                                                {s.tietDay > 0 ? `${s.tietDay} tiết - ` : ''}{(s.tienGiangDay || 0).toLocaleString()}đ
+                                            </td>
+                                            <td style={{ padding: '15px' }}>{(s.thueTncn || 0).toLocaleString()}đ</td>
+                                            <td style={{ padding: '15px', color: '#05cd99', fontWeight: 'bold' }}>{s.tienThuong ? '+' + s.tienThuong.toLocaleString() : 0}đ</td>
+                                            <td style={{ padding: '15px', color: '#ee5d50', fontWeight: 'bold' }}>{s.tienPhat ? '-' + s.tienPhat.toLocaleString() : 0}đ</td>
+                                            <td style={{ padding: '15px', color: '#4318ff', fontWeight: 'bold' }}>
                                                 {(s.thucLinh || 0).toLocaleString()}đ
                                             </td>
                                         </tr>

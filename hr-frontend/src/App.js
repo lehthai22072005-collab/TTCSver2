@@ -1,12 +1,16 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
 import './App.css';
+
+
 
 import LoginPage from './pages/LoginPage';
 import DashboardAdmin from './pages/DashboardAdmin';
 import DashboardAccountant from './pages/DashboardAccountant';
 import DashboardTeacher from './pages/DashboardTeacher';
 import DashboardDirector from './pages/DashboardDirector';
+import DashboardHR from './pages/DashboardHR';
 
 import EmployeePage from './pages/EmployeePage';
 import AttendancePage from './pages/AttendancePage';
@@ -29,7 +33,33 @@ import HrReportsPage from './pages/HRReportsPage';
 import SalaryFundPage from './pages/SalaryFluctuationPage';
 import SystemConfigPage from './pages/SystemConfigPage';
 import PaymentDetailPage from './pages/PaymentDetailPage';
+import KpiManagementPage from './pages/KpiManagementPage';
+import MyKpiPage from './pages/MyKpiPage';
+import TeachingDeclarationPage from './pages/TeachingDeclarationPage';
+import DeclarationApprovalPage from './pages/DeclarationApprovalPage';
+import RewardDisciplinePage from './pages/RewardDisciplinePage';
 
+// Tự động gắn Role vào Header cho Backend nhận diện
+axios.interceptors.request.use(config => {
+    const role = localStorage.getItem('role');
+    if (role) {
+        config.headers['Role'] = role;
+    }
+    return config;
+});
+
+// Bắt lỗi 503 (Bảo trì) toàn cục, lập tức đá văng user
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response && error.response.status === 503) {
+            localStorage.clear();
+            window.location.href = '/';
+            alert("Hệ thống đang bảo trì! Bạn đã bị đăng xuất.");
+        }
+        return Promise.reject(error);
+    }
+);
 const DashboardRouter = () => {
     const role = localStorage.getItem('role');
 
@@ -40,6 +70,7 @@ const DashboardRouter = () => {
     if (role === 'TEACHER' || role === 'STAFF') return <DashboardTeacher />;
 
     if (role === 'DIRECTOR') return <DashboardDirector />;
+    if (role === 'HR') return <DashboardHR />;
 
     // Nếu không khớp role nào, đẩy về trang đăng nhập
     return <Navigate to="/" />;
@@ -74,6 +105,11 @@ function App() {
                 <Route path="/my-contract" element={<MyContractPage />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/leave-request" element={<LeaveRequestPage />} />
+                <Route path="/kpi" element={<KpiManagementPage />} />
+                <Route path="/my-kpi" element={<MyKpiPage />} />
+                <Route path="/declarations" element={<TeachingDeclarationPage />} />
+                <Route path="/declarations-approval" element={<DeclarationApprovalPage />} />
+                <Route path="/rewards" element={<RewardDisciplinePage />} />
             </Routes>
         </Router>
     );
