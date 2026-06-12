@@ -37,11 +37,12 @@ function AdminDashboardPage() {
     const activeAccounts = validAccounts.filter(acc => acc.status === 'Active').length;
     const lockedAccounts = validAccounts.filter(acc => acc.status === 'Locked' || acc.status === 'Khóa').length;
 
-    const rolesCount = { 'Admin': 0, 'Ban Giám Hiệu': 0, 'Giảng viên/Nhân viên': 0, 'Kế toán': 0 };
+    const rolesCount = { 'Admin': 0, 'Ban Giám Hiệu': 0, 'Giảng viên/Nhân viên': 0, 'Kế toán': 0, 'Phòng nhân sự': 0 };
     validAccounts.forEach(acc => {
         if (acc.role === 'Admin') rolesCount['Admin']++;
         else if (acc.role === 'Ban Giám Hiệu') rolesCount['Ban Giám Hiệu']++;
         else if (acc.role === 'Kế toán') rolesCount['Kế toán']++;
+        else if (acc.role === 'Phòng nhân sự') rolesCount['Phòng nhân sự']++;
         else rolesCount['Giảng viên/Nhân viên']++;
     });
 
@@ -49,7 +50,8 @@ function AdminDashboardPage() {
         { name: 'Admin', value: rolesCount['Admin'], color: '#4318ff' },
         { name: 'Ban Giám Hiệu', value: rolesCount['Ban Giám Hiệu'], color: '#ffb547' },
         { name: 'Nhân viên', value: rolesCount['Giảng viên/Nhân viên'], color: '#ff5630' },
-        { name: 'Kế toán', value: rolesCount['Kế toán'], color: '#05cd99' }
+        { name: 'Kế toán', value: rolesCount['Kế toán'], color: '#05cd99' },
+        { name: 'Phòng nhân sự', value: rolesCount['Phòng nhân sự'], color: '#8a2be2' }
     ].filter(item => item.value > 0);
 
     // --- XỬ LÝ DỮ LIỆU PHÂN TRANG ---

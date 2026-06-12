@@ -157,7 +157,7 @@ public class PayrollController {
                 Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue("NV" + p.getEmployee().getId());
                 row.createCell(1).setCellValue(p.getEmployee().getFullName());
-                row.createCell(2).setCellValue(p.getEmployee().getNhomNhanSu());
+                row.createCell(2).setCellValue(p.getEmployee().getDepartment());
                 row.createCell(3).setCellValue(p.getNgayCong() != null ? p.getNgayCong() : 0);
                 row.createCell(4).setCellValue(p.getTietDay() != null ? p.getTietDay() : 0);
                 row.createCell(5).setCellValue(p.getLuongCoBan() != null ? p.getLuongCoBan().doubleValue() : 0);

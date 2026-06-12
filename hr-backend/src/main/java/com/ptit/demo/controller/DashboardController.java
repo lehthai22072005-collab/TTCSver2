@@ -59,7 +59,7 @@ public class DashboardController {
         }
         stats.put("budgetData", budgetMap);
 
-        List<SystemLog> logs = systemLogRepository.findAllByOrderByTimestampDesc();
+        List<SystemLog> logs = systemLogRepository.findAllByOrderByIdDesc();
         stats.put("notifications", logs.size() > 5 ? logs.subList(0, 5) : logs);
         return ResponseEntity.ok(stats);
     }

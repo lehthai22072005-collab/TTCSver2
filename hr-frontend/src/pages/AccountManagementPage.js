@@ -7,6 +7,7 @@ function AccountManagementPage() {
     const [accounts, setAccounts] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Form data: Đã bổ sung trường employeeId
     const [formData, setFormData] = useState({
@@ -81,7 +82,7 @@ function AccountManagementPage() {
     };
 
     const handleToggleStatus = async (account) => {
-        if(window.confirm(`Bạn có chắc muốn ${account.status === 'Active' ? 'khóa' : 'mở khóa'} user ${account.username}?`)) {
+        if (window.confirm(`Bạn có chắc muốn ${account.status === 'Active' ? 'khóa' : 'mở khóa'} user ${account.username}?`)) {
             try {
                 const currentUser = localStorage.getItem('username') || 'System';
 
@@ -107,7 +108,13 @@ function AccountManagementPage() {
                     <h2 style={{ fontWeight: 'bold', color: '#1b2559', marginBottom: '30px' }}>QUẢN LÝ TÀI KHOẢN</h2>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                        <input type="text" placeholder="[ Tìm kiếm 🔍 ]" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', width: '300px' }} />
+                        <input
+                            type="text"
+                            placeholder="[ Tìm kiếm 🔍 ]"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', width: '300px' }}
+                        />
                         <button onClick={() => handleOpenModal()} style={{ backgroundColor: '#4318ff', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
                             [ + Tạo User ]
                         </button>
@@ -116,41 +123,50 @@ function AccountManagementPage() {
                     <div style={{ backgroundColor: '#fff', borderRadius: '15px', padding: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
-                            <tr style={{ borderBottom: '2px solid #f4f7fe', color: '#a3aed0' }}>
-                                <th style={{ padding: '15px' }}>STT</th>
-                                <th>USERNAME</th>
-                                <th>HỌ VÀ TÊN</th>
-                                <th>ROLE</th>
-                                <th>STATUS</th>
-                                <th>ACTION</th>
-                            </tr>
+                                <tr style={{ borderBottom: '2px solid #f4f7fe', color: '#a3aed0' }}>
+                                    <th style={{ padding: '15px' }}>STT</th>
+                                    <th>USERNAME</th>
+                                    <th>HỌ VÀ TÊN</th>
+                                    <th>ROLE</th>
+                                    <th>STATUS</th>
+                                    <th>ACTION</th>
+                                </tr>
                             </thead>
                             <tbody>
-                            {accounts.map((acc, index) => (
-                                <tr key={index} style={{ borderBottom: '1px solid #f4f7fe', color: '#2b3674', fontWeight: '500' }}>
-                                    <td style={{ padding: '15px' }}>{index + 1}</td>
-                                    <td>{acc.username}</td>
-                                    <td>{acc.fullName}</td>
-                                    <td>{acc.role}</td>
-                                    <td style={{ color: acc.status === 'Active' ? '#05cd99' : '#e53e3e' }}>{acc.status}</td>
-                                    <td>
-                                        {acc.username === "[ Chưa có tài khoản ]" ? (
-                                            <button onClick={() => handleOpenModal(acc)} style={{ color: '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                                                [Cấp TK]
-                                            </button>
-                                        ) : (
-                                            <>
-                                                <button onClick={() => handleOpenModal(acc)} style={{ color: '#4318ff', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>
-                                                    [Edit]
+                                {accounts.filter(acc => {
+                                    const q = searchQuery.toLowerCase();
+                                    return (
+                                        (acc.username && acc.username.toLowerCase().includes(q)) ||
+                                        (acc.fullName && acc.fullName.toLowerCase().includes(q)) ||
+                                        (acc.email && acc.email.toLowerCase().includes(q)) ||
+                                        (acc.role && acc.role.toLowerCase().includes(q)) ||
+                                        (acc.status && acc.status.toLowerCase().includes(q))
+                                    );
+                                }).map((acc, index) => (
+                                    <tr key={index} style={{ borderBottom: '1px solid #f4f7fe', color: '#2b3674', fontWeight: '500' }}>
+                                        <td style={{ padding: '15px' }}>{index + 1}</td>
+                                        <td>{acc.username}</td>
+                                        <td>{acc.fullName}</td>
+                                        <td>{acc.role}</td>
+                                        <td style={{ color: acc.status === 'Active' ? '#05cd99' : '#e53e3e' }}>{acc.status}</td>
+                                        <td>
+                                            {acc.username === "[ Chưa có tài khoản ]" ? (
+                                                <button onClick={() => handleOpenModal(acc)} style={{ color: '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                    [Cấp TK]
                                                 </button>
-                                                <button onClick={() => handleToggleStatus(acc)} style={{ color: acc.status === 'Active' ? '#e53e3e' : '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                                                    [{acc.status === 'Active' ? 'Lock' : 'Unlock'}]
-                                                </button>
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                                            ) : (
+                                                <>
+                                                    <button onClick={() => handleOpenModal(acc)} style={{ color: '#4318ff', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>
+                                                        [Edit]
+                                                    </button>
+                                                    <button onClick={() => handleToggleStatus(acc)} style={{ color: acc.status === 'Active' ? '#e53e3e' : '#05cd99', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                        [{acc.status === 'Active' ? 'Lock' : 'Unlock'}]
+                                                    </button>
+                                                </>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
@@ -164,23 +180,23 @@ function AccountManagementPage() {
 
                                 <div style={{ marginBottom: '15px' }}>
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Username:</label>
-                                    <input type="text" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} style={inputStyle} />
+                                    <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} style={inputStyle} />
                                 </div>
                                 <div style={{ marginBottom: '15px' }}>
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Họ và tên:</label>
-                                    <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} style={inputStyle} />
+                                    <input type="text" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} style={inputStyle} />
                                 </div>
                                 <div style={{ marginBottom: '15px' }}>
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Email:</label>
-                                    <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={inputStyle} />
+                                    <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={inputStyle} />
                                 </div>
                                 <div style={{ marginBottom: '15px' }}>
-                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Password: {isEditMode && <span style={{fontSize:'12px', color:'gray'}}>(Bỏ trống nếu không đổi)</span>}</label>
-                                    <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} style={inputStyle} />
+                                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Password: {isEditMode && <span style={{ fontSize: '12px', color: 'gray' }}>(Bỏ trống nếu không đổi)</span>}</label>
+                                    <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} style={inputStyle} />
                                 </div>
                                 <div style={{ marginBottom: '15px' }}>
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Role:</label>
-                                    <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} style={inputStyle}>
+                                    <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} style={inputStyle}>
                                         <option value="Admin">Admin</option>
                                         <option value="Kế toán">Kế toán</option>
                                         <option value="Nhân viên">Nhân viên</option>
@@ -190,7 +206,7 @@ function AccountManagementPage() {
                                 </div>
                                 <div style={{ marginBottom: '20px' }}>
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Status:</label>
-                                    <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={inputStyle}>
+                                    <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} style={inputStyle}>
                                         <option value="Active">Active</option>
                                         <option value="Locked">Locked</option>
                                     </select>

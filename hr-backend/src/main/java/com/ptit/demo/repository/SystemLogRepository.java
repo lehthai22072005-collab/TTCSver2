@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface SystemLogRepository extends JpaRepository<SystemLog, Long> {
     // Lấy log sắp xếp mới nhất lên đầu
-    List<SystemLog> findAllByOrderByTimestampDesc();
+    List<SystemLog> findAllByOrderByIdDesc();
 }

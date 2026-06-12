@@ -14,6 +14,7 @@ public class Teacher {
     private String username;
     private String password;
     private String specialization;
+    private String status = "Active";
 
     @OneToOne
     @JoinColumn(name = "employee_id")

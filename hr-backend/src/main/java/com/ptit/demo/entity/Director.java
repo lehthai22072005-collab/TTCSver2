@@ -13,6 +13,7 @@ public class Director {
 
     private String username;
     private String password;
+    private String status = "Active";
 
     @OneToOne
     @JoinColumn(name = "employee_id")

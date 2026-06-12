@@ -32,12 +32,18 @@ public class AccountController {
 
     private String getTableName(String role) {
         switch (role) {
-            case "Admin": return "admin";
-            case "Kế toán": return "accountant";
-            case "Nhân viên": return "staff";
-            case "Ban Giám Hiệu": return "ban_giam_hieu";
-            case "Phòng nhân sự": return "human_resources";
-            default: return "staff";
+            case "Admin":
+                return "admin";
+            case "Kế toán":
+                return "accountant";
+            case "Nhân viên":
+                return "staff";
+            case "Ban Giám Hiệu":
+                return "ban_giam_hieu";
+            case "Phòng nhân sự":
+                return "human_resources";
+            default:
+                return "staff";
         }
     }
 
@@ -47,7 +53,8 @@ public class AccountController {
             // Lấy thời gian hiện tại chuẩn định dạng "HH:mm dd/MM/yyyy"
             String thoiGian = new java.text.SimpleDateFormat("HH:mm dd/MM/yyyy").format(new java.util.Date());
 
-            // Lưu vào bảng system_logs. (Nếu tên cột của bạn khác, hãy sửa lại cho khớp nhé)
+            // Lưu vào bảng system_logs. (Nếu tên cột của bạn khác, hãy sửa lại cho khớp
+            // nhé)
             String sql = "INSERT INTO system_logs (thoi_gian, hanh_dong, nguoi_dung) VALUES (?, ?, ?)";
             jdbcTemplate.update(sql, thoiGian, hanhDong, nguoiDung);
         } catch (Exception e) {
@@ -59,24 +66,23 @@ public class AccountController {
     @GetMapping("/list")
     public ResponseEntity<?> getAllAccounts() {
         try {
-            String sql =
-                    "SELECT e.id as employee_id, e.full_name, e.email, " +
-                            "COALESCE(a.username, c.username, s.username, b.username, h.username) as username, " +
-                            "CASE " +
-                            "WHEN a.username IS NOT NULL THEN 'Admin' " +
-                            "WHEN c.username IS NOT NULL THEN 'Kế toán' " +
-                            "WHEN b.username IS NOT NULL THEN 'Ban Giám Hiệu' " +
-                            "WHEN h.username IS NOT NULL THEN 'Phòng nhân sự' " +
-                            "WHEN s.username IS NOT NULL THEN 'Nhân viên' " +
-                            "ELSE 'Chưa cấp quyền' " +
-                            "END as role, " +
-                            "COALESCE(a.status, c.status, s.status, b.status, h.status, 'No Account') as status " +
-                            "FROM employee e " +
-                            "LEFT JOIN admin a ON e.id = a.employee_id " +
-                            "LEFT JOIN accountant c ON e.id = c.employee_id " +
-                            "LEFT JOIN staff s ON e.id = s.employee_id " +
-                            "LEFT JOIN ban_giam_hieu b ON e.id = b.employee_id " +
-                            "LEFT JOIN human_resources h ON e.id = h.employee_id";
+            String sql = "SELECT e.id as employee_id, e.full_name, e.email, " +
+                    "COALESCE(a.username, c.username, s.username, b.username, h.username) as username, " +
+                    "CASE " +
+                    "WHEN a.username IS NOT NULL THEN 'Admin' " +
+                    "WHEN c.username IS NOT NULL THEN 'Kế toán' " +
+                    "WHEN b.username IS NOT NULL THEN 'Ban Giám Hiệu' " +
+                    "WHEN h.username IS NOT NULL THEN 'Phòng nhân sự' " +
+                    "WHEN s.username IS NOT NULL THEN 'Nhân viên' " +
+                    "ELSE 'Chưa cấp quyền' " +
+                    "END as role, " +
+                    "COALESCE(a.status, c.status, s.status, b.status, h.status, 'No Account') as status " +
+                    "FROM employee e " +
+                    "LEFT JOIN admin a ON e.id = a.employee_id " +
+                    "LEFT JOIN accountant c ON e.id = c.employee_id " +
+                    "LEFT JOIN staff s ON e.id = s.employee_id " +
+                    "LEFT JOIN ban_giam_hieu b ON e.id = b.employee_id " +
+                    "LEFT JOIN human_resources h ON e.id = h.employee_id";
 
             List<Map<String, Object>> accounts = jdbcTemplate.query(sql, (rs, rowNum) -> {
                 Map<String, Object> map = new HashMap<>();
@@ -112,8 +118,7 @@ public class AccountController {
 
                 if (emp == null) {
                     return ResponseEntity.status(404).body(Map.of(
-                            "message", "Không tìm thấy nhân viên!"
-                    ));
+                            "message", "Không tìm thấy nhân viên!"));
                 }
             } else {
                 emp = new Employee();
@@ -145,8 +150,7 @@ public class AccountController {
                             emp.getFullName(),
                             username,
                             password,
-                            role
-                    );
+                            role);
                 } else {
                     emailMessage = "Nhân viên chưa có email nên không gửi thông báo tài khoản.";
                 }
@@ -156,12 +160,10 @@ public class AccountController {
 
             return ResponseEntity.ok(Map.of(
                     "message", "Tạo tài khoản thành công!",
-                    "emailMessage", emailMessage
-            ));
+                    "emailMessage", emailMessage));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "message", "Lỗi tạo User: " + e.getMessage()
-            ));
+                    "message", "Lỗi tạo User: " + e.getMessage()));
         }
     }
 
@@ -180,12 +182,14 @@ public class AccountController {
             String oldTable = getTableName(oldRole);
             String newTable = getTableName(newRole);
 
-            List<Long> ids = jdbcTemplate.queryForList("SELECT employee_id FROM " + oldTable + " WHERE username = ?", Long.class, oldUsername);
-            if (ids.isEmpty()) return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy TK cũ."));
+            List<Long> ids = jdbcTemplate.queryForList("SELECT employee_id FROM " + oldTable + " WHERE username = ?",
+                    Long.class, oldUsername);
+            if (ids.isEmpty())
+                return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy TK cũ."));
             Long empId = ids.get(0);
 
             Employee emp = employeeRepository.findById(empId).orElse(null);
-            if(emp != null) {
+            if (emp != null) {
                 emp.setFullName(data.get("fullName"));
                 emp.setEmail(data.get("email"));
                 employeeRepository.save(emp);
@@ -193,13 +197,23 @@ public class AccountController {
 
             if (!oldRole.equals(newRole)) {
                 jdbcTemplate.update("DELETE FROM " + oldTable + " WHERE username = ?", oldUsername);
-                jdbcTemplate.update("INSERT INTO " + newTable + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)",
+                jdbcTemplate.update(
+                        "INSERT INTO " + newTable + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)",
                         username, (password != null && !password.isEmpty()) ? password : "123", empId, status);
             } else {
-                jdbcTemplate.update("UPDATE " + oldTable + " SET username = ?, status = ? WHERE username = ?", username, status, oldUsername);
+                jdbcTemplate.update("UPDATE " + oldTable + " SET username = ?, status = ? WHERE username = ?", username,
+                        status, oldUsername);
                 if (password != null && !password.trim().isEmpty()) {
-                    jdbcTemplate.update("UPDATE " + oldTable + " SET password = ? WHERE username = ?", password, username);
+                    jdbcTemplate.update("UPDATE " + oldTable + " SET password = ? WHERE username = ?", password,
+                            username);
                 }
+            }
+
+            if ("Active".equalsIgnoreCase(status)) {
+                jdbcTemplate.update(
+                        "INSERT INTO login_attempts(username, fail_count) VALUES (?, 0) " +
+                                "ON DUPLICATE KEY UPDATE fail_count = 0",
+                        username);
             }
 
             // GỌI HÀM GHI LOG
@@ -224,6 +238,13 @@ public class AccountController {
             String sql = "UPDATE " + getTableName(role) + " SET status = ? WHERE username = ?";
             jdbcTemplate.update(sql, newStatus, username);
 
+            if ("Active".equalsIgnoreCase(newStatus)) {
+                jdbcTemplate.update(
+                        "INSERT INTO login_attempts(username, fail_count) VALUES (?, 0) " +
+                                "ON DUPLICATE KEY UPDATE fail_count = 0",
+                        username);
+            }
+
             // GỌI HÀM GHI LOG
             String actionName = (newStatus.equals("Locked") ? "Khóa" : "Mở khóa") + " tài khoản: " + username;
             ghiLogHeThong(actionName, actionBy);
@@ -233,6 +254,7 @@ public class AccountController {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi DB: " + e.getMessage()));
         }
     }
+
     // 5. API CHUYÊN LẤY NHẬT KÝ HOẠT ĐỘNG
     @GetMapping("/logs")
     public ResponseEntity<?> getSystemLogs() {
@@ -245,6 +267,7 @@ public class AccountController {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi lấy log: " + e.getMessage()));
         }
     }
+
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(@RequestBody Map<String, String> data) {
         try {
@@ -257,8 +280,7 @@ public class AccountController {
 
             if (newPassword == null || newPassword.length() < minPasswordLength) {
                 return ResponseEntity.badRequest().body(Map.of(
-                        "message", "Mật khẩu mới phải có ít nhất " + minPasswordLength + " ký tự!"
-                ));
+                        "message", "Mật khẩu mới phải có ít nhất " + minPasswordLength + " ký tự!"));
             }
 
             String table = "staff";
@@ -278,14 +300,12 @@ public class AccountController {
 
             if (passwords.isEmpty()) {
                 return ResponseEntity.status(404).body(Map.of(
-                        "message", "Lỗi: Không tìm thấy tài khoản trong CSDL!"
-                ));
+                        "message", "Lỗi: Không tìm thấy tài khoản trong CSDL!"));
             }
 
             if (!passwords.get(0).equals(oldPassword)) {
                 return ResponseEntity.badRequest().body(Map.of(
-                        "message", "Mật khẩu hiện tại không chính xác!"
-                ));
+                        "message", "Mật khẩu hiện tại không chính xác!"));
             }
 
             String sqlUpdate = "UPDATE " + table + " SET password = ? WHERE username = ?";
@@ -294,12 +314,10 @@ public class AccountController {
             ghiLogHeThong("Đổi mật khẩu cá nhân", username);
 
             return ResponseEntity.ok(Map.of(
-                    "message", "Đổi mật khẩu thành công!"
-            ));
+                    "message", "Đổi mật khẩu thành công!"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "message", "Lỗi hệ thống: " + e.getMessage()
-            ));
+                    "message", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
 }

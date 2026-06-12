@@ -37,9 +37,11 @@ function DashboardAccountant() {
     const handleSaveBudget = async () => {
         if (!inputAmount) return alert("Vui lòng nhập số tiền dự tính!");
         try {
+            const rawAmount = parseFloat(inputAmount);
+            const amountToSave = rawAmount < 10000 ? rawAmount * 1000000 : rawAmount;
             await axios.post('http://localhost:8080/api/budget/save', {
                 thangNam: inputMonth,
-                phuCapDuTinh: parseFloat(inputAmount) * 1000000
+                phuCapDuTinh: amountToSave
             });
             alert(`Cập nhật phụ cấp dự tính cho ${inputMonth} thành công!`);
             setInputAmount("");
@@ -115,8 +117,8 @@ function DashboardAccountant() {
                                     type="number"
                                     value={inputAmount}
                                     onChange={(e) => setInputAmount(e.target.value)}
-                                    placeholder="Số tiền (Triệu)"
-                                    style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #e2e8f0', width: '120px', outline: 'none' }}
+                                    placeholder="VNĐ hoặc Triệu"
+                                    style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #e2e8f0', width: '130px', outline: 'none' }}
                                 />
                                 <button
                                     onClick={handleSaveBudget}
@@ -131,8 +133,8 @@ function DashboardAccountant() {
                             <BarChart data={formattedChartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip />
+                                <YAxis tickFormatter={(val) => `${val} tr`} />
+                                <Tooltip formatter={(value) => [`${(value * 1000000).toLocaleString('vi-VN')} đ`]} />
                                 <Legend />
                                 <Bar dataKey="Luong" fill="#4318ff" name="Lương thực trả" radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="PhuCap" fill="#05cd99" name="Phụ cấp dự tính" radius={[4, 4, 0, 0]} />
@@ -147,9 +149,9 @@ function DashboardAccountant() {
                             {stats.notifications && stats.notifications.length > 0 ? (
                                 stats.notifications.map((note) => (
                                     <li key={note.id} style={{ ...liStyle }}>
-                                        • {note.noiDung}
+                                        • {note.noiDung || note.action}
                                         <small style={{ color: '#a3aed0', marginLeft: '10px' }}>
-                                            ({new Date(note.timestamp).toLocaleDateString()})
+                                            ({note.timestamp && note.timestamp.includes('/') ? note.timestamp : (note.timestamp ? new Date(note.timestamp).toLocaleDateString() : '')})
                                         </small>
                                     </li>
                                 ))

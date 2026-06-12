@@ -44,6 +44,16 @@ public class AuthController {
         String username = request.getUsername();
         String password = request.getPassword();
 
+        if (isAccountLockedInDatabase(username)) {
+            return ResponseEntity.badRequest().body(new LoginResponse(
+                    false,
+                    "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.",
+                    null,
+                    null,
+                    null
+            ));
+        }
+
         boolean maintenanceMode = configService.getBoolean("maintenanceMode", false);
         int maxLoginAttempts = configService.getInt("maxLoginAttempts", 5);
 
@@ -76,6 +86,7 @@ public class AuthController {
         int currentFailCount = getFailCount(username);
 
         if (currentFailCount >= maxLoginAttempts) {
+            lockAccountInDatabase(username);
             return ResponseEntity.badRequest().body(new LoginResponse(
                     false,
                     "Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.",
@@ -159,6 +170,17 @@ public class AuthController {
 
         int afterFailCount = getFailCount(username);
 
+        if (afterFailCount >= maxLoginAttempts) {
+            lockAccountInDatabase(username);
+            return ResponseEntity.badRequest().body(new LoginResponse(
+                    false,
+                    "Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.",
+                    null,
+                    null,
+                    null
+            ));
+        }
+
         return ResponseEntity.badRequest().body(new LoginResponse(
                 false,
                 "Sai username hoặc password. Số lần sai: " + afterFailCount + "/" + maxLoginAttempts,
@@ -166,6 +188,36 @@ public class AuthController {
                 null,
                 null
         ));
+    }
+
+    private boolean isAccountLockedInDatabase(String username) {
+        String[] tables = {"admin", "staff", "accountant", "ban_giam_hieu", "human_resources"};
+        for (String table : tables) {
+            try {
+                List<String> statusList = jdbcTemplate.queryForList(
+                        "SELECT status FROM " + table + " WHERE username = ?",
+                        String.class,
+                        username
+                );
+                if (!statusList.isEmpty() && "Locked".equalsIgnoreCase(statusList.get(0))) {
+                    return true;
+                }
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+        return false;
+    }
+
+    private void lockAccountInDatabase(String username) {
+        String[] tables = {"admin", "staff", "accountant", "ban_giam_hieu", "human_resources"};
+        for (String table : tables) {
+            try {
+                jdbcTemplate.update("UPDATE " + table + " SET status = 'Locked' WHERE username = ?", username);
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
     }
 
     private int getFailCount(String username) {

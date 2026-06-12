@@ -29,7 +29,7 @@ public class AdminController {
     // ==========================================
     @GetMapping("/logs")
     public ResponseEntity<?> getAllLogs() {
-        return ResponseEntity.ok(systemLogRepository.findAllByOrderByTimestampDesc());
+        return ResponseEntity.ok(systemLogRepository.findAllByOrderByIdDesc());
     }
 
     // ==========================================
@@ -70,7 +70,7 @@ public class AdminController {
         stats.put("activeAccounts", 4);
         stats.put("lockedAccounts", 1);
 
-        List<SystemLog> recentLogs = systemLogRepository.findAllByOrderByTimestampDesc();
+        List<SystemLog> recentLogs = systemLogRepository.findAllByOrderByIdDesc();
         stats.put("recentLogs", recentLogs.size() > 5 ? recentLogs.subList(0, 5) : recentLogs);
 
         return ResponseEntity.ok(stats);

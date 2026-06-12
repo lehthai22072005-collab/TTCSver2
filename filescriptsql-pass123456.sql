@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS leave_requests;
 DROP TABLE IF EXISTS admin;
 DROP TABLE IF EXISTS accountant;
 DROP TABLE IF EXISTS ban_giam_hieu;
+DROP TABLE IF EXISTS human_resources;
 DROP TABLE IF EXISTS staff;
 DROP TABLE IF EXISTS employee;
 SET FOREIGN_KEY_CHECKS = 1;
@@ -73,6 +74,16 @@ CREATE TABLE accountant (
 -- Khối Ban Giám Hiệu
 CREATE TABLE ban_giam_hieu (
     bgh_id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    status VARCHAR(20) DEFAULT 'Active',
+    employee_id BIGINT,
+    FOREIGN KEY (employee_id) REFERENCES employee(id) ON DELETE CASCADE
+);
+
+-- Khối Phòng nhân sự (HR)
+CREATE TABLE human_resources (
+    hr_id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     status VARCHAR(20) DEFAULT 'Active',
@@ -151,27 +162,30 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 -- 3. CHÈN TÀI KHOẢN MẪU VÀ CẬP NHẬT DỮ LIỆU
 -- ==========================================================
 
--- 1. Chèn Hồ sơ 4 nhân viên gốc
+-- 1. Chèn Hồ sơ 5 nhân viên gốc
 INSERT INTO employee (id, full_name, department, position, email, phone, academic_degree, base_salary) VALUES 
 (1, 'Nguyễn Thị Lan', 'Khoa Cơ bản', 'Giảng viên', 'lan.nguyen@ptit.edu.vn', '0123456789', 'Thạc sĩ', 15000000),
 (2, 'Lê Tấn Phát', 'Ban Giám Hiệu', 'Hiệu trưởng', 'phat.le@ptit.edu.vn', '0111222333', 'Tiến sĩ', 30000000),
 (3, 'Trần Văn Hải', 'Phòng Tài chính', 'Kế toán', 'hai.tran@ptit.edu.vn', '0987654321', 'Cử nhân', 12000000),
-(4, 'Lê Thái Admin', 'Trung tâm IT', 'Quản trị viên', 'admin@ptit.edu.vn', '0123999888', 'Kỹ sư', 20000000);
+(4, 'Lê Thái Admin', 'Trung tâm IT', 'Quản trị viên', 'admin@ptit.edu.vn', '0123999888', 'Kỹ sư', 20000000),
+(5, 'Nguyễn Văn Khánh', 'Phòng nhân sự', 'Chuyên viên nhân sự', 'khanh.nguyen@ptit.edu.vn', '0909090909', 'Cử nhân', 18000000);
 
 -- 2. Cấp tài khoản đăng nhập (Mật khẩu mặc định: 123456)
 INSERT INTO staff (username, password, specialization, employee_id) VALUES ('gv_lan', '123456', 'Toán Cao Cấp', 1);
 INSERT INTO ban_giam_hieu (username, password, employee_id) VALUES ('bgh_phat', '123456', 2);
 INSERT INTO accountant (username, password, employee_id) VALUES ('kt_hai', '123456', 3);
 INSERT INTO admin (username, password, employee_id) VALUES ('admin_thai', '123456', 4);
+INSERT INTO human_resources (username, password, employee_id) VALUES ('nhansu_khanh', '123456', 5);
 
 -- 3. Thêm cột contract_start_date vào bảng employee
 ALTER TABLE employee ADD COLUMN contract_start_date DATE AFTER academic_degree;
 
--- 4. Cập nhật lại ngày Bắt đầu và Kết thúc cho 4 nhân sự gốc
+-- 4. Cập nhật lại ngày Bắt đầu và Kết thúc cho các nhân sự gốc
 UPDATE employee SET contract_start_date = '2026-01-05', contract_end_date = '2028-01-05' WHERE id = 1;
 UPDATE employee SET contract_start_date = '2026-01-10', contract_end_date = '2028-01-10' WHERE id = 2;
 UPDATE employee SET contract_start_date = '2026-02-15', contract_end_date = '2028-02-15' WHERE id = 3;
 UPDATE employee SET contract_start_date = '2025-03-10', contract_end_date = '2026-03-10' WHERE id = 4;
+UPDATE employee SET contract_start_date = '2026-02-20', contract_end_date = '2028-02-20' WHERE id = 5;
 
 
 INSERT INTO system_config (config_key, config_value, description) VALUES
