@@ -5,7 +5,7 @@ import TopBar from '../components/TopBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function DashboardDirector() {
-    const userName = localStorage.getItem('username') || 'Giám đốc';
+    const userName = localStorage.getItem('username') || '';
 
     // State lưu trữ dữ liệu đồng bộ từ Database
     const [directorStats, setDirectorStats] = useState({
@@ -19,7 +19,7 @@ function DashboardDirector() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/api/dashboard/director-stats");
+                const res = await axios.get("/api/dashboard/director-stats");
                 setDirectorStats(res.data);
                 setLoading(false);
             } catch (err) {

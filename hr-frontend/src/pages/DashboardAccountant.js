@@ -22,7 +22,7 @@ function DashboardAccountant() {
     // Hàm đồng bộ dữ liệu tổng hợp từ Backend
     const fetchStats = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/dashboard/stats");
+            const res = await axios.get("/api/dashboard/stats");
             setStats(res.data);
         } catch (err) {
             console.error("Lỗi đồng bộ hệ thống Dashboard:", err);
@@ -39,7 +39,7 @@ function DashboardAccountant() {
         try {
             const rawAmount = parseFloat(inputAmount);
             const amountToSave = rawAmount < 10000 ? rawAmount * 1000000 : rawAmount;
-            await axios.post('http://localhost:8080/api/budget/save', {
+            await axios.post('/api/budget/save', {
                 thangNam: inputMonth,
                 phuCapDuTinh: amountToSave
             });

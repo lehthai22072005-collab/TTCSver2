@@ -10,7 +10,7 @@ function PaymentDetailPage() {
     const realMonth = month.replace('-', '/'); // Chuyển lại thành "03/2026"
 
     useEffect(() => {
-        axios.get(`http://localhost:8080/api/salary/detail?month=${realMonth}`)
+        axios.get(`/api/salary/detail?month=${realMonth}`)
             .then(res => setDetails(res.data))
             .catch(err => console.log(err));
     }, [realMonth]);

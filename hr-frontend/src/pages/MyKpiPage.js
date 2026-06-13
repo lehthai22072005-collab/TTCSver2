@@ -16,7 +16,7 @@ function MyKpiPage() {
 
     const fetchMyKpi = async () => {
         try {
-            const res = await axios.get(`http://localhost:8080/api/kpi/my-kpi/${employeeId}`);
+            const res = await axios.get(`/api/kpi/my-kpi/${employeeId}`);
             setKpiList(res.data);
         } catch (err) {
             console.error(err);

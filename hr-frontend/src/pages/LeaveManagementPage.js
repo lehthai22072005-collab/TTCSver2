@@ -12,7 +12,7 @@ function LeaveManagementPage() {
 
     const fetchRequests = async () => {
         try {
-            const res = await axios.get('http://localhost:8080/api/leave-requests');
+            const res = await axios.get('/api/leave-requests');
             setRequests(res.data);
         } catch (err) {
             console.error("Lỗi lấy danh sách nghỉ phép:", err);
@@ -22,7 +22,7 @@ function LeaveManagementPage() {
     const handleUpdateStatus = async (id, newStatus) => {
         if (!window.confirm(`Bạn muốn chuyển trạng thái đơn sang ${newStatus}?`)) return;
         try {
-            await axios.put(`http://localhost:8080/api/leave-requests/${id}/status?status=${newStatus}`);
+            await axios.put(`/api/leave-requests/${id}/status?status=${newStatus}`);
             fetchRequests();
         } catch (err) {
             console.error("Lỗi cập nhật trạng thái:", err);

@@ -18,10 +18,10 @@ function MySalaryPage() {
 
     const fetchMySalary = async () => {
         try {
-            const profileRes = await axios.get(`http://localhost:8080/api/profile/${currentRole}/${currentUsername}`);
+            const profileRes = await axios.get(`/api/profile/${currentRole}/${currentUsername}`);
             const empId = profileRes.data.id;
 
-            const salaryRes = await axios.get(`http://localhost:8080/api/salary/my-salary/${empId}`);
+            const salaryRes = await axios.get(`/api/salary/my-salary/${empId}`);
             const data = salaryRes.data;
 
             data.sort((a, b) => {

@@ -17,7 +17,7 @@ function TeachingDeclarationPage() {
 
     const fetchMyDeclarations = async () => {
         try {
-            const res = await axios.get(`http://localhost:8080/api/declarations/my-declarations/${employeeId}`);
+            const res = await axios.get(`/api/declarations/my-declarations/${employeeId}`);
             setDeclarations(res.data);
         } catch (err) {
             console.error(err);
@@ -31,7 +31,7 @@ function TeachingDeclarationPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:8080/api/declarations', form);
+            await axios.post('/api/declarations', form);
             alert("Đã gửi phiếu kê khai thành công! Vui lòng chờ phê duyệt.");
             setForm({ employeeId: employeeId, hocKy: 'Học kỳ 1 - 2026', soTietDay: '', soBaiBao: '', ghiChu: '' });
             fetchMyDeclarations();

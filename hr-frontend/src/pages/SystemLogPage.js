@@ -14,7 +14,7 @@ function SystemLogPage() {
     useEffect(() => {
         const fetchLogs = async () => {
             try {
-                const res = await axios.get('http://localhost:8080/api/accounts/logs');
+                const res = await axios.get('/api/accounts/logs');
                 setLogs(res.data);
                 setLoading(false);
             } catch (err) {

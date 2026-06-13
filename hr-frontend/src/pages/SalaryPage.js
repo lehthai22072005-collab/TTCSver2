@@ -15,7 +15,7 @@ function SalaryPage() {
     const handleCalculate = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`http://localhost:8080/api/salary/preview?month=${month}`);
+            const res = await axios.get(`/api/salary/preview?month=${month}`);
             setSalaryPreview(res.data);
         } catch (err) {
             // Hiển thị trực tiếp thông báo chặn hoặc thông báo lỗi từ Backend nhả về
@@ -31,7 +31,7 @@ function SalaryPage() {
 
         if (window.confirm(`Xác nhận khóa chính thức bảng lương tháng ${month}? Dữ liệu sau khi khóa sẽ được lưu lịch sử và không thể chỉnh sửa lại.`)) {
             try {
-                await axios.post(`http://localhost:8080/api/salary/lock?month=${month}`);
+                await axios.post(`/api/salary/lock?month=${month}`);
                 alert("🔒 Hệ thống: Đã chốt và khóa bảng lương thành công!");
                 // Điều hướng tự động sang trang Lịch sử chi trả để kiểm tra kết quả
                 window.location.href = "/payment-history";
@@ -44,7 +44,7 @@ function SalaryPage() {
 
     const handleExportExcel = () => {
         // Mở URL export trong tab mới để trình duyệt tải file về
-        window.open(`http://localhost:8080/api/salary/export?month=${month}`, '_blank');
+        window.open(`/api/salary/export?month=${month}`, '_blank');
     };
 
     // VÒNG LẶP TỰ ĐỘNG TẠO MẢNG CHỨA 12 THÁNG CỦA NĂM HIỆN TẠI

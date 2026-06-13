@@ -37,6 +37,9 @@ public class AuthController {
     private SystemConfigService configService;
 
     @Autowired
+    private LoginAttemptRepository loginAttemptRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @PostMapping("/login")
@@ -221,43 +224,22 @@ public class AuthController {
     }
 
     private int getFailCount(String username) {
-        try {
-            List<Integer> result = jdbcTemplate.queryForList(
-                    "SELECT fail_count FROM login_attempts WHERE username = ?",
-                    Integer.class,
-                    username
-            );
-
-            return result.isEmpty() ? 0 : result.get(0);
-        } catch (Exception e) {
-            return 0;
-        }
+        return loginAttemptRepository.findByUsername(username)
+                .map(LoginAttempt::getFailCount)
+                .orElse(0);
     }
 
     private void increaseFailCount(String username) {
-        int current = getFailCount(username);
-        int next = current + 1;
-
-        jdbcTemplate.update(
-                """
-                INSERT INTO login_attempts(username, fail_count)
-                VALUES (?, ?)
-                ON DUPLICATE KEY UPDATE fail_count = ?
-                """,
-                username,
-                next,
-                next
-        );
+        LoginAttempt attempt = loginAttemptRepository.findByUsername(username)
+                .orElse(new LoginAttempt(username, 0));
+        attempt.setFailCount(attempt.getFailCount() + 1);
+        loginAttemptRepository.save(attempt);
     }
 
     private void resetFailCount(String username) {
-        jdbcTemplate.update(
-                """
-                INSERT INTO login_attempts(username, fail_count)
-                VALUES (?, 0)
-                ON DUPLICATE KEY UPDATE fail_count = 0
-                """,
-                username
-        );
+        loginAttemptRepository.findByUsername(username).ifPresent(attempt -> {
+            attempt.setFailCount(0);
+            loginAttemptRepository.save(attempt);
+        });
     }
 }

@@ -21,7 +21,7 @@ function AttendancePage() {
 
     const fetchAttendance = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/attendance/all");
+            const res = await axios.get("/api/attendance/all");
 
             // SẮP XẾP DỮ LIỆU: Mới nhất lên đầu (Dựa vào Ngày + Giờ)
             const sortedData = res.data.sort((a, b) => {
@@ -58,7 +58,7 @@ function AttendancePage() {
 
         try {
             setUploadStatus("Đang xử lý...");
-            const res = await axios.post("http://localhost:8080/api/attendance/upload", formData);
+            const res = await axios.post("/api/attendance/upload", formData);
 
             setUploadStatus("Upload thành công!");
             alert("✅ " + res.data.message);

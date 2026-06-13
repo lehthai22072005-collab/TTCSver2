@@ -25,7 +25,7 @@ function SystemConfigPage() {
     const fetchConfig = async () => {
         try {
             setLoading(true);
-            const res = await axios.get('http://localhost:8080/api/config');
+            const res = await axios.get('/api/config');
 
             setConfig(prev => ({
                 ...prev,
@@ -101,7 +101,7 @@ function SystemConfigPage() {
         };
 
         const res = await axios.post(
-            'http://localhost:8080/api/config/update',
+            '/api/config/update',
             payload
         );
 
@@ -158,7 +158,7 @@ function SystemConfigPage() {
         try {
             await saveConfig(); // Tự động lưu cấu hình trước khi gửi mail
 
-            const res = await axios.post('http://localhost:8080/api/email/test', {
+            const res = await axios.post('/api/email/test', {
                 toEmail: testEmail
             });
 

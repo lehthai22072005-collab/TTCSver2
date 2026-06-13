@@ -12,7 +12,7 @@ function DeclarationApprovalPage() {
 
     const fetchDeclarations = async () => {
         try {
-            const res = await axios.get('http://localhost:8080/api/declarations');
+            const res = await axios.get('/api/declarations');
             setDeclarations(res.data);
         } catch (err) {
             console.error(err);
@@ -22,7 +22,7 @@ function DeclarationApprovalPage() {
     const handleUpdateStatus = async (id, status) => {
         if (window.confirm(`Xác nhận chuyển trạng thái thành: ${status}?`)) {
             try {
-                await axios.put(`http://localhost:8080/api/declarations/${id}/status`, { status });
+                await axios.put(`/api/declarations/${id}/status`, { status });
                 alert("Cập nhật thành công!");
                 fetchDeclarations();
             } catch (err) {

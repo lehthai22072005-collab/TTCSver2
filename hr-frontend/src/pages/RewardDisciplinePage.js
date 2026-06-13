@@ -17,7 +17,7 @@ function RewardDisciplinePage() {
 
     const fetchRecords = async () => {
         try {
-            const res = await axios.get('http://localhost:8080/api/rewards');
+            const res = await axios.get('/api/rewards');
             setRecords(res.data);
             setLoading(false);
         } catch (err) {
@@ -27,7 +27,7 @@ function RewardDisciplinePage() {
 
     const fetchEmployees = async () => {
         try {
-            const res = await axios.get('http://localhost:8080/api/employees');
+            const res = await axios.get('/api/employees');
             setEmployees(res.data);
         } catch (err) {
             console.error(err);
@@ -41,7 +41,7 @@ function RewardDisciplinePage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:8080/api/rewards', form);
+            await axios.post('/api/rewards', form);
             alert("Lưu quyết định thành công!");
             setForm({ employeeId: '', type: 'KHEN_THUONG', amount: '', reason: '', effectiveDate: '' });
             fetchRecords();
@@ -53,7 +53,7 @@ function RewardDisciplinePage() {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa quyết định này? Nó sẽ ảnh hưởng tới việc tính lương!")) {
             try {
-                await axios.delete(`http://localhost:8080/api/rewards/${id}`);
+                await axios.delete(`/api/rewards/${id}`);
                 fetchRecords();
             } catch (err) {
                 alert("Lỗi khi xóa!");

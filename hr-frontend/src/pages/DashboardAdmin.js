@@ -18,9 +18,9 @@ function AdminDashboardPage() {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const accRes = await axios.get('http://localhost:8080/api/accounts/list');
+                const accRes = await axios.get('/api/accounts/list');
                 setAccounts(accRes.data);
-                const logRes = await axios.get('http://localhost:8080/api/accounts/logs');
+                const logRes = await axios.get('/api/accounts/logs');
                 setLogs(logRes.data);
                 setLoading(false);
             } catch (err) {

@@ -54,7 +54,7 @@ function SalaryFluctuationPage() {
 
     const fetchFluctuations = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/dashboard/salary-fluctuations");
+            const res = await axios.get("/api/dashboard/salary-fluctuations");
             setFluctuations(res.data);
             setLoading(false);
         } catch (err) {

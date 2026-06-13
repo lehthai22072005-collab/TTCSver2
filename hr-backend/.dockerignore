@@ -1,0 +1,8 @@
+target
+maven_extracted
+.mvn
+.git
+.gitignore
+.vscode
+.idea
+*.log

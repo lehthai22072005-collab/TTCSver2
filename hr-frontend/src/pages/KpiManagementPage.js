@@ -18,7 +18,7 @@ function KpiManagementPage() {
 
     const fetchKpi = async () => {
         try {
-            const res = await axios.get('http://localhost:8080/api/kpi');
+            const res = await axios.get('/api/kpi');
             setKpiList(res.data);
             setLoading(false);
         } catch (err) {
@@ -28,7 +28,7 @@ function KpiManagementPage() {
 
     const fetchEmployees = async () => {
         try {
-            const res = await axios.get('http://localhost:8080/api/employees');
+            const res = await axios.get('/api/employees');
             setEmployees(res.data);
         } catch (err) {
             console.error(err);
@@ -42,7 +42,7 @@ function KpiManagementPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:8080/api/kpi', form);
+            await axios.post('/api/kpi', form);
             alert("Lưu thông tin KPI thành công!");
             setForm({ id: null, employeeId: '', hocKy: 'Học kỳ 1 - 2026', diemDanhGia: '', soBaiBao: '', ghiChu: '' });
             setIsEditing(false);
@@ -67,7 +67,7 @@ function KpiManagementPage() {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) {
             try {
-                await axios.delete(`http://localhost:8080/api/kpi/${id}`);
+                await axios.delete(`/api/kpi/${id}`);
                 fetchKpi();
             } catch (err) {
                 alert("Lỗi khi xóa!");

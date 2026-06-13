@@ -10,7 +10,7 @@ function ApprovalsPage() {
     // 1. Lấy tất cả các đơn xin nghỉ phép từ Database
     const fetchApprovals = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/leave-requests");
+            const res = await axios.get("/api/leave-requests");
             // Sắp xếp đơn mới nhất lên đầu
             const sortedData = res.data.sort((a, b) => b.id - a.id);
             setApprovals(sortedData);
@@ -31,7 +31,7 @@ function ApprovalsPage() {
         if(!window.confirm(`Xác nhận chuyển trạng thái đơn #${id} thành: ${statusText}?`)) return;
 
         try {
-            await axios.put(`http://localhost:8080/api/leave-requests/${id}/status?status=${statusText}`);
+            await axios.put(`/api/leave-requests/${id}/status?status=${statusText}`);
             alert(`✅ Đã ${statusText} cho đơn mã #${id}`);
             fetchApprovals(); // Tải lại bảng để cập nhật trạng thái mới
         } catch (err) {

@@ -1,24 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 import '../App.css';
 
 function DepartmentPage() {
-    const [departments, setDepartments] = useState([
-        { id: 'BM01', name: 'Khoa Công nghệ Thông tin', manager: 'PGS. TS. Trần Văn X', count: 45, status: 'Hoạt động' },
-        { id: 'BM02', name: 'Khoa Kinh tế', manager: 'TS. Nguyễn Thị Y', count: 30, status: 'Hoạt động' },
-        { id: 'PB01', name: 'Phòng Hành chính Nhân sự', manager: 'ThS. Lê Văn Z', count: 12, status: 'Hoạt động' },
-        { id: 'PB02', name: 'Phòng Kế toán', manager: 'CN. Phạm Thị T', count: 8, status: 'Hoạt động' }
-    ]);
-
+    const [departments, setDepartments] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [newDept, setNewDept] = useState({ id: '', name: '', manager: '', count: 0, status: 'Hoạt động' });
+    const [newDept, setNewDept] = useState({ departmentCode: '', name: '', manager: '', employeeCount: 0, status: 'Hoạt động' });
 
-    const handleAddSubmit = (e) => {
+    useEffect(() => {
+        fetchDepartments();
+    }, []);
+
+    const fetchDepartments = async () => {
+        try {
+            const res = await axios.get("/api/departments");
+            setDepartments(res.data);
+        } catch (err) {
+            console.error("Lỗi khi tải danh sách phòng ban:", err);
+        }
+    };
+
+    const handleAddSubmit = async (e) => {
         e.preventDefault();
-        setDepartments([...departments, newDept]);
-        setShowModal(false);
-        setNewDept({ id: '', name: '', manager: '', count: 0, status: 'Hoạt động' });
+        try {
+            await axios.post("/api/departments", newDept);
+            alert("Thêm phòng ban thành công!");
+            setShowModal(false);
+            setNewDept({ departmentCode: '', name: '', manager: '', employeeCount: 0, status: 'Hoạt động' });
+            fetchDepartments();
+        } catch (err) {
+            console.error("Lỗi khi thêm phòng ban:", err);
+            alert("Thêm phòng ban thất bại!");
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Bạn có chắc chắn muốn xóa phòng ban này?")) {
+            try {
+                await axios.delete(`/api/departments/${id}`);
+                alert("Xóa thành công!");
+                fetchDepartments();
+            } catch (err) {
+                console.error("Lỗi khi xóa:", err);
+                alert("Xóa thất bại!");
+            }
+        }
     };
 
     return (
@@ -46,17 +74,21 @@ function DepartmentPage() {
                             <tbody>
                                 {departments.map((dept, index) => (
                                     <tr key={index}>
-                                        <td style={{ fontWeight: 'bold', color: '#64748b' }}>{dept.id}</td>
+                                        <td style={{ fontWeight: 'bold', color: '#64748b' }}>{dept.departmentCode}</td>
                                         <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{dept.name}</td>
                                         <td>{dept.manager}</td>
-                                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{dept.count}</td>
+                                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{dept.employeeCount}</td>
                                         <td><span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem' }}>{dept.status}</span></td>
                                         <td>
-                                            <button style={{ backgroundColor: '#e0f2fe', color: '#0284c7', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '5px' }}>Sửa</button>
-                                            <button style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Xoá</button>
+                                            <button style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => handleDelete(dept.id)}>Xoá</button>
                                         </td>
                                     </tr>
                                 ))}
+                                {departments.length === 0 && (
+                                    <tr>
+                                        <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>Chưa có dữ liệu phòng ban.</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -70,7 +102,7 @@ function DepartmentPage() {
                         <form onSubmit={handleAddSubmit}>
                             <div className="form-group">
                                 <label>Mã Đơn vị</label>
-                                <input type="text" required value={newDept.id} onChange={(e) => setNewDept({...newDept, id: e.target.value})} placeholder="VD: BM03" />
+                                <input type="text" required value={newDept.departmentCode} onChange={(e) => setNewDept({...newDept, departmentCode: e.target.value})} placeholder="VD: BM03" />
                             </div>
                             <div className="form-group">
                                 <label>Tên Đơn vị / Khoa</label>
@@ -82,7 +114,7 @@ function DepartmentPage() {
                             </div>
                             <div className="form-group">
                                 <label>Số lượng nhân sự ban đầu</label>
-                                <input type="number" required value={newDept.count} onChange={(e) => setNewDept({...newDept, count: parseInt(e.target.value) || 0})} />
+                                <input type="number" required value={newDept.employeeCount} onChange={(e) => setNewDept({...newDept, employeeCount: parseInt(e.target.value) || 0})} />
                             </div>
                             <div className="form-group">
                                 <label>Trạng thái ban đầu</label>

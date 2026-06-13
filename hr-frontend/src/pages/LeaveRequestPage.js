@@ -50,12 +50,12 @@ function LeaveRequestPage() {
 
     const fetchRequests = async () => {
         try {
-            const profileRes = await axios.get(`http://localhost:8080/api/profile/${currentRole}/${currentUsername}`);
+            const profileRes = await axios.get(`/api/profile/${currentRole}/${currentUsername}`);
             const employeeId = profileRes.data.id;
             const employeeName = profileRes.data.fullName;
             setEmpInfo({ id: employeeId, name: employeeName });
 
-            const res = await axios.get(`http://localhost:8080/api/leave-requests/employee/${employeeId}`);
+            const res = await axios.get(`/api/leave-requests/employee/${employeeId}`);
             const sortedData = res.data.sort((a, b) => b.id - a.id);
             setLeaveRequests(sortedData);
 
@@ -84,7 +84,7 @@ function LeaveRequestPage() {
         }
 
         try {
-            await axios.post("http://localhost:8080/api/leave-requests", {
+            await axios.post("/api/leave-requests", {
                 employeeId: empInfo.id,
                 employeeName: empInfo.name,
                 startDate: newRequest.startDate,

@@ -21,7 +21,7 @@ function ProfilePage() {
         }
 
         try {
-            const res = await axios.get(`http://localhost:8080/api/profile/${currentRole}/${currentUsername}`);
+            const res = await axios.get(`/api/profile/${currentRole}/${currentUsername}`);
             setUserProfile(res.data);
 
             setEditData({
@@ -46,7 +46,7 @@ function ProfilePage() {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`http://localhost:8080/api/employees/${userProfile.id}`, {
+            await axios.put(`/api/employees/${userProfile.id}`, {
                 ...userProfile,
                 fullName: editData.fullName,
                 email: editData.email,

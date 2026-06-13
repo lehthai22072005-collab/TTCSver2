@@ -32,31 +32,12 @@ public class EmployeeController {
         return employeeRepository.findAll();
     }
 
-    // 2. Thêm nhân viên mới & Tự động cấp tài khoản theo chức vụ (CREATE)
+    // 2. Thêm nhân viên mới (HR chỉ thêm hồ sơ)
     @PostMapping
     public Employee createEmployee(@RequestBody Employee employee) {
-        // Lưu thông tin hồ sơ vào bảng employee
-        Employee savedEmp = employeeRepository.save(employee);
-
-        // Logic tự động tạo tài khoản dựa trên Position (Chức vụ)
-        String position = savedEmp.getPosition();
-
-        if ("Kế toán".equalsIgnoreCase(position)) {
-            Accountant acc = new Accountant();
-            acc.setUsername(savedEmp.getEmail()); // Username là Email
-            acc.setPassword("123456");           // Mật khẩu mặc định
-            acc.setEmployee(savedEmp);            // Link tới hồ sơ
-            accountantRepository.save(acc);
-        }
-        else if ("Giảng viên".equalsIgnoreCase(position)) {
-            Teacher teacher = new Teacher();
-            teacher.setUsername(savedEmp.getEmail());
-            teacher.setPassword("123456");
-            teacher.setEmployee(savedEmp);
-            teacherRepository.save(teacher);
-        }
-
-        return savedEmp;
+        // Lưu thông tin hồ sơ vào bảng employee. 
+        // Tài khoản sẽ do Admin cấp.
+        return employeeRepository.save(employee);
     }
 
     // 3. Cập nhật hồ sơ nhân sự (UPDATE) - Đã fix đầy đủ 7 trường dữ liệu

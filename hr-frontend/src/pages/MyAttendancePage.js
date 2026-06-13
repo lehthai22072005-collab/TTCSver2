@@ -18,10 +18,10 @@ function MyAttendancePage() {
     useEffect(() => {
         const fetchMyAttendance = async () => {
             try {
-                const profileRes = await axios.get(`http://localhost:8080/api/profile/${currentRole}/${currentUsername}`);
+                const profileRes = await axios.get(`/api/profile/${currentRole}/${currentUsername}`);
                 const empId = profileRes.data.id;
 
-                const attendanceRes = await axios.get(`http://localhost:8080/api/attendance/employee/${empId}`);
+                const attendanceRes = await axios.get(`/api/attendance/employee/${empId}`);
 
                 // SẮP XẾP: Mới nhất lên đỉnh
                 const sortedData = attendanceRes.data.sort((a, b) => {

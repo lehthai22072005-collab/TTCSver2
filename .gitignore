@@ -23,6 +23,7 @@ bin/
 /db/data/
 hs_err_pid*
 .mvn/wrapper/maven-wrapper.jar
+maven_extracted/
 
 # --- FRONTEND (ReactJS) ---
 node_modules/

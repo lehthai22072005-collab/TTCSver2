@@ -41,7 +41,7 @@ function ChangePasswordPage() {
 
         // 3. Gửi Request lên Backend
         try {
-            const response = await axios.post('http://localhost:8080/api/accounts/change-password', {
+            const response = await axios.post('/api/accounts/change-password', {
                 username: username,
                 role: role,
                 oldPassword: currentPassword,

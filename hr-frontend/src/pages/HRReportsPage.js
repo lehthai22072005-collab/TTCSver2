@@ -15,7 +15,7 @@ function HRReportsPage() {
     useEffect(() => {
         const fetchReport = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/api/dashboard/hr-reports");
+                const res = await axios.get("/api/dashboard/hr-reports");
                 setReportData(res.data);
                 setLoading(false);
             } catch (err) {

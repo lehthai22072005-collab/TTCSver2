@@ -17,7 +17,7 @@ function AccountManagementPage() {
 
     const fetchAccounts = async () => {
         try {
-            const res = await axios.get('http://localhost:8080/api/accounts/list');
+            const res = await axios.get('/api/accounts/list');
             setAccounts(res.data);
         } catch (err) {
             console.error("Lỗi lấy danh sách tài khoản:", err);
@@ -70,7 +70,7 @@ function AccountManagementPage() {
             const payload = { ...formData, actionBy: currentUser };
 
             const endpoint = isEditMode ? '/update' : '/create';
-            await axios.post(`http://localhost:8080/api/accounts${endpoint}`, payload);
+            await axios.post(`/api/accounts${endpoint}`, payload);
 
             alert("✅ Xử lý thành công!");
             setShowModal(false);
@@ -86,7 +86,7 @@ function AccountManagementPage() {
             try {
                 const currentUser = localStorage.getItem('username') || 'System';
 
-                await axios.post('http://localhost:8080/api/accounts/toggle-status', {
+                await axios.post('/api/accounts/toggle-status', {
                     username: account.username,
                     role: account.role,
                     status: account.status,
@@ -98,6 +98,8 @@ function AccountManagementPage() {
             }
         }
     };
+
+
 
     return (
         <div className="dashboard-layout">
@@ -115,9 +117,12 @@ function AccountManagementPage() {
                             onChange={e => setSearchQuery(e.target.value)}
                             style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', width: '300px' }}
                         />
-                        <button onClick={() => handleOpenModal()} style={{ backgroundColor: '#4318ff', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                            [ + Tạo User ]
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+
+                            <button onClick={() => handleOpenModal()} style={{ backgroundColor: '#4318ff', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                [ + Tạo User ]
+                            </button>
+                        </div>
                     </div>
 
                     <div style={{ backgroundColor: '#fff', borderRadius: '15px', padding: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}>

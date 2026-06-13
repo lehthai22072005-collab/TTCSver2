@@ -14,7 +14,7 @@ function PaymentHistoryPage() {
         const fetchHistory = async () => {
             try {
                 // Gọi API lấy các bản ghi đã chốt lương
-                const res = await axios.get('http://localhost:8080/api/salary/history');
+                const res = await axios.get('/api/salary/history');
 
                 // Nhóm theo tháng để hiển thị danh sách tổng quát
                 const map = new Map();

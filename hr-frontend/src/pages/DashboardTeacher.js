@@ -4,7 +4,7 @@ import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 function DashboardTeacher() {
-    const userName = localStorage.getItem('username') || 'Giảng viên';
+    const userName = localStorage.getItem('username') || '';
     const role = localStorage.getItem('role') || 'TEACHER';
 
     const [tietDay, setTietDay] = useState(0);
@@ -43,10 +43,10 @@ function DashboardTeacher() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const profileRes = await axios.get(`http://localhost:8080/api/profile/${role}/${userName}`);
+                const profileRes = await axios.get(`/api/profile/${role}/${userName}`);
                 const empId = profileRes.data.id;
 
-                const attendanceRes = await axios.get(`http://localhost:8080/api/attendance/employee/${empId}`);
+                const attendanceRes = await axios.get(`/api/attendance/employee/${empId}`);
                 const attendanceData = attendanceRes.data;
 
                 if (attendanceData && attendanceData.length > 0) {
@@ -65,7 +65,7 @@ function DashboardTeacher() {
                 }
 
                 try {
-                    const leaveRes = await axios.get(`http://localhost:8080/api/leave-requests/employee/${empId}`);
+                    const leaveRes = await axios.get(`/api/leave-requests/employee/${empId}`);
                     const leaveData = leaveRes.data;
 
                     const deductedDays = leaveData

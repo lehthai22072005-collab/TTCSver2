@@ -53,7 +53,7 @@ function EmployeePage() {
 
     const fetchEmployees = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/employees");
+            const res = await axios.get("/api/employees");
             setEmployees(res.data);
             setLoading(false);
         } catch (err) {
@@ -72,7 +72,7 @@ function EmployeePage() {
             return alert("Vui lòng điền họ tên và email bắt buộc!");
         }
         try {
-            await axios.post("http://localhost:8080/api/employees", newEmployee);
+            await axios.post("/api/employees", newEmployee);
             alert("✅ Hệ thống: Thêm mới hồ sơ nhân sự thành công!");
             setShowCreateModal(false);
             setNewEmployee({
@@ -117,7 +117,7 @@ function EmployeePage() {
             return alert("Vui lòng điền họ tên và email bắt buộc!");
         }
         try {
-            await axios.put(`http://localhost:8080/api/employees/${selectedEmployee.id}`, selectedEmployee);
+            await axios.put(`/api/employees/${selectedEmployee.id}`, selectedEmployee);
             alert("✅ Hệ thống: Cập nhật hồ sơ nhân sự thành công!");
             setShowUpdateModal(false);
             await fetchEmployees();

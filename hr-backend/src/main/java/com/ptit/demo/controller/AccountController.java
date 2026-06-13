@@ -121,11 +121,21 @@ public class AccountController {
                             "message", "Không tìm thấy nhân viên!"));
                 }
             } else {
-                emp = new Employee();
-                emp.setFullName(data.get("fullName"));
-                emp.setEmail(data.get("email"));
-                emp = employeeRepository.save(emp);
-                empId = emp.getId();
+                String email = data.get("email");
+                List<Long> existingIds = jdbcTemplate.queryForList("SELECT id FROM employee WHERE email = ?", Long.class, email);
+                
+                if (!existingIds.isEmpty()) {
+                    // Nếu nhân viên đã tồn tại, dùng luôn hồ sơ đó
+                    empId = existingIds.get(0);
+                    emp = employeeRepository.findById(empId).orElse(null);
+                } else {
+                    // Nếu chưa tồn tại, tạo hồ sơ nhân viên mới
+                    emp = new Employee();
+                    emp.setFullName(data.get("fullName"));
+                    emp.setEmail(email);
+                    emp = employeeRepository.save(emp);
+                    empId = emp.getId();
+                }
             }
 
             String username = data.get("username");
@@ -255,7 +265,6 @@ public class AccountController {
         }
     }
 
-    // 5. API CHUYÊN LẤY NHẬT KÝ HOẠT ĐỘNG
     @GetMapping("/logs")
     public ResponseEntity<?> getSystemLogs() {
         try {
@@ -267,6 +276,8 @@ public class AccountController {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi lấy log: " + e.getMessage()));
         }
     }
+
+
 
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(@RequestBody Map<String, String> data) {
