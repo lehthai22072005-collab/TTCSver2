@@ -42,8 +42,12 @@ import RewardDisciplinePage from './pages/RewardDisciplinePage';
 // Tự động gắn Role vào Header cho Backend nhận diện
 axios.interceptors.request.use(config => {
     const role = localStorage.getItem('role');
+    const username = localStorage.getItem('username');
     if (role) {
         config.headers['Role'] = role;
+    }
+    if (username) {
+        config.headers['Username'] = username;
     }
     return config;
 });

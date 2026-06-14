@@ -11,6 +11,11 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-padmin123"]
+      timeout: 5s
+      retries: 10
+      interval: 5s
     restart: always
 
   backend:
@@ -23,7 +28,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=admin123
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     restart: always
 
   frontend:

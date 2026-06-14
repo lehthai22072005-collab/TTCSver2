@@ -10,7 +10,6 @@ function DashboardDirector() {
     // State lưu trữ dữ liệu đồng bộ từ Database
     const [directorStats, setDirectorStats] = useState({
         totalEmployees: 0,
-        pendingLeaves: 0,
         totalSalaryFund: 0,
         monthlyTrend: {}
     });
@@ -55,13 +54,6 @@ function DashboardDirector() {
                         <div style={cardInfo}>
                             <p style={labelStyle}>TỔNG SỐ NHÂN SỰ TOÀN TRƯỜNG</p>
                             <h2 style={valueStyle}>{loading ? "..." : `${directorStats.totalEmployees} người`}</h2>
-                        </div>
-
-                        <div style={directorStats.pendingLeaves > 0 ? cardWarningActive : cardWarningEmpty}>
-                            <p style={labelStyle}>ĐƠN NGHỈ PHÉP CHỜ PHÊ DUYỆT</p>
-                            <h2 style={valueStyle}>
-                                {loading ? "..." : `${directorStats.pendingLeaves} đơn từ`}
-                            </h2>
                         </div>
 
                         <div style={cardSuccess}>
@@ -109,9 +101,5 @@ const chartContainer = { backgroundColor: '#fff', borderRadius: '20px', padding:
 
 const cardInfo = { flex: 1, background: 'linear-gradient(90deg, #4318ff 0%, #5e3aff 100%)', borderRadius: '20px', padding: '25px 30px', color: '#fff', boxShadow: '0px 18px 40px rgba(67, 24, 255, 0.2)' };
 const cardSuccess = { flex: 1, background: 'linear-gradient(90deg, #05cd99 0%, #04b688 100%)', borderRadius: '20px', padding: '25px 30px', color: '#fff', boxShadow: '0px 18px 40px rgba(5, 205, 153, 0.2)' };
-
-// Thẻ cảnh báo đơn từ thông minh (Đổi màu cam rực lửa nếu có đơn đang xếp hàng chờ duyệt)
-const cardWarningActive = { flex: 1, background: 'linear-gradient(90deg, #ff9800 0%, #ff5722 100%)', borderRadius: '20px', padding: '25px 30px', color: '#fff', boxShadow: '0px 18px 40px rgba(255, 152, 0, 0.3)' };
-const cardWarningEmpty = { flex: 1, background: '#fff', border: '2px solid #cbd5e1', borderRadius: '20px', padding: '25px 30px', color: '#1b2559' };
 
 export default DashboardDirector;

@@ -61,6 +61,23 @@ public class SystemConfigController {
                 actionBy = "System";
             }
 
+            String minPasswordLengthValue = data.get("minPasswordLength");
+            if (minPasswordLengthValue != null) {
+                int minPasswordLength;
+                try {
+                    minPasswordLength = Integer.parseInt(minPasswordLengthValue);
+                } catch (NumberFormatException e) {
+                    return ResponseEntity.badRequest().body(
+                            Map.of("message", "Độ dài mật khẩu tối thiểu phải là số nguyên.")
+                    );
+                }
+                if (minPasswordLength < 4 || minPasswordLength > 128) {
+                    return ResponseEntity.badRequest().body(
+                            Map.of("message", "Độ dài mật khẩu tối thiểu phải từ 4 đến 128.")
+                    );
+                }
+            }
+
             String sql = """
                     INSERT INTO system_config (config_key, config_value, description)
                     VALUES (?, ?, ?)

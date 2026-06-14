@@ -43,8 +43,12 @@ INSERT IGNORE INTO contract (id, contract_no, employee_id, employee_name, type, 
 (1, 'HD-GV-2024/001', 2, 'Nguyễn Văn Giảng Viên', 'Vô thời hạn', 'Giảng viên chính', '2024-01-01', null, 'Đang hiệu lực'),
 (2, 'HD-NV-2024/002', 6, 'Hoàng Văn Nhân Viên', 'Xác định thời hạn (12 tháng)', 'Nhân viên hành chính', '2024-06-01', '2025-06-01', 'Đang hiệu lực');
 
+
 -- Cấu hình gửi mail
 INSERT IGNORE INTO system_config (config_key, config_value) VALUES 
+('minPasswordLength', '5'),
+('maxLoginAttempts', '5'),
+('maintenanceMode', 'false'),
 ('emailEnabled', 'true'),
 ('smtpUsername', 'gigasmash476996@gmail.com'),
 ('smtpPassword', 'ttopfnhztmovjfux'),

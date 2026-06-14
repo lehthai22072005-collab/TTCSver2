@@ -5,12 +5,14 @@ import com.ptit.demo.dto.LoginResponse;
 import com.ptit.demo.entity.*;
 import com.ptit.demo.repository.*;
 import com.ptit.demo.service.SystemConfigService;
+import com.ptit.demo.service.SystemLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -42,12 +44,16 @@ public class AuthController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private SystemLogService systemLogService;
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         String username = request.getUsername();
         String password = request.getPassword();
 
         if (isAccountLockedInDatabase(username)) {
+            systemLogService.log("Đăng nhập thất bại: tài khoản đang bị khóa", username);
             return ResponseEntity.badRequest().body(new LoginResponse(
                     false,
                     "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.",
@@ -64,6 +70,7 @@ public class AuthController {
 
         if (adminOpt.isPresent() && adminOpt.get().getPassword().equals(password)) {
             resetFailCount(username);
+            systemLogService.log("Đăng nhập thành công", username);
 
             Admin admin = adminOpt.get();
 
@@ -77,6 +84,7 @@ public class AuthController {
         }
 
         if (maintenanceMode) {
+            systemLogService.log("Đăng nhập bị từ chối do hệ thống bảo trì", username);
             return ResponseEntity.status(503).body(new LoginResponse(
                     false,
                     "Hệ thống đang bảo trì. Chỉ Admin được phép đăng nhập.",
@@ -90,6 +98,7 @@ public class AuthController {
 
         if (currentFailCount >= maxLoginAttempts) {
             lockAccountInDatabase(username);
+            systemLogService.log("Tài khoản bị khóa do đăng nhập sai quá số lần cho phép", username);
             return ResponseEntity.badRequest().body(new LoginResponse(
                     false,
                     "Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.",
@@ -103,6 +112,7 @@ public class AuthController {
 
         if (teacherOpt.isPresent() && teacherOpt.get().getPassword().equals(password)) {
             resetFailCount(username);
+            systemLogService.log("Đăng nhập thành công", username);
 
             Teacher staffAccount = teacherOpt.get();
             String finalRole = "STAFF";
@@ -125,6 +135,7 @@ public class AuthController {
 
         if (accountantOpt.isPresent() && accountantOpt.get().getPassword().equals(password)) {
             resetFailCount(username);
+            systemLogService.log("Đăng nhập thành công", username);
 
             Accountant accountant = accountantOpt.get();
 
@@ -141,6 +152,7 @@ public class AuthController {
 
         if (directorOpt.isPresent() && directorOpt.get().getPassword().equals(password)) {
             resetFailCount(username);
+            systemLogService.log("Đăng nhập thành công", username);
 
             Director director = directorOpt.get();
 
@@ -157,6 +169,7 @@ public class AuthController {
 
         if (hrOpt.isPresent() && hrOpt.get().getPassword().equals(password)) {
             resetFailCount(username);
+            systemLogService.log("Đăng nhập thành công", username);
 
             Hr hr = hrOpt.get();
 
@@ -175,6 +188,7 @@ public class AuthController {
 
         if (afterFailCount >= maxLoginAttempts) {
             lockAccountInDatabase(username);
+            systemLogService.log("Tài khoản bị khóa do đăng nhập sai quá số lần cho phép", username);
             return ResponseEntity.badRequest().body(new LoginResponse(
                     false,
                     "Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.",
@@ -184,6 +198,7 @@ public class AuthController {
             ));
         }
 
+        systemLogService.log("Đăng nhập thất bại", username);
         return ResponseEntity.badRequest().body(new LoginResponse(
                 false,
                 "Sai username hoặc password. Số lần sai: " + afterFailCount + "/" + maxLoginAttempts,
@@ -191,6 +206,12 @@ public class AuthController {
                 null,
                 null
         ));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
+        systemLogService.log("Đăng xuất khỏi hệ thống", request.get("username"));
+        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
     }
 
     private boolean isAccountLockedInDatabase(String username) {

@@ -5,8 +5,6 @@ import com.ptit.demo.entity.Payroll;
 import com.ptit.demo.repository.PayrollRepository;
 import com.ptit.demo.repository.RewardDisciplineRepository;
 import com.ptit.demo.entity.RewardDiscipline;
-import com.ptit.demo.entity.TeachingDeclaration;
-import com.ptit.demo.repository.TeachingDeclarationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
@@ -23,29 +21,22 @@ public class PayrollService {
     @Autowired
     private RewardDisciplineRepository rdRepository;
 
-    @Autowired
-    private TeachingDeclarationRepository declRepository;
-
     private static final BigDecimal BHXH_RATE = new BigDecimal("0.105");
     private static final BigDecimal TAX_FREE_THRESHOLD = new BigDecimal("11000000");
+    private static final int STANDARD_TEACHING_PERIODS = 80;
+    private static final BigDecimal OVERTIME_TEACHING_RATE = new BigDecimal("150000");
 
     public List<Payroll> calculateForAll(String month, List<Employee> employees) {
         List<Payroll> payrollList = new ArrayList<>();
-        BigDecimal pricePerPeriod = new BigDecimal("150000");
-
         String[] parts = month.split("/");
         String monthPattern = parts[1] + "-" + parts[0] + "-%";
 
         for (Employee emp : employees) {
             int workDays = payrollRepository.countWorkDays(emp.getId(), monthPattern);
-            
-            List<TeachingDeclaration> declarations = declRepository.findValidUnpaidDeclarations(emp.getId(), "ĐÃ DUYỆT");
-            int periods = 0;
-            for (TeachingDeclaration d : declarations) {
-                if (d.getSoTietDay() != null) periods += d.getSoTietDay();
-            }
+            Integer periodSum = payrollRepository.sumTeachingPeriods(emp.getId(), monthPattern);
+            int totalTeachingPeriods = periodSum != null ? periodSum : 0;
 
-            if (workDays == 0 && periods == 0) {
+            if (workDays == 0 && totalTeachingPeriods == 0) {
                 continue;
             }
 
@@ -54,32 +45,32 @@ public class PayrollService {
             p.setThangNam(month);
             p.setTrangThaiChot(false);
             p.setNgayCong(workDays);
-            p.setTietDay(periods);
 
             BigDecimal baseSalary = (emp.getBaseSalary() != null) ? emp.getBaseSalary() : new BigDecimal("10000000");
             BigDecimal heSo = new BigDecimal(emp.getBacLuong() != null ? emp.getBacLuong() : 1);
             
             BigDecimal calculatedBaseSalary;
             BigDecimal teachingAllowance = BigDecimal.ZERO;
+            int overtimeTeachingPeriods = 0;
             
             BigDecimal standardDays = new BigDecimal("22");
             BigDecimal actualDays = new BigDecimal(workDays);
             
             if ("Giảng viên".equals(emp.getNhomNhanSu())) {
                 calculatedBaseSalary = baseSalary.multiply(actualDays).divide(standardDays, 0, RoundingMode.HALF_UP);
-                teachingAllowance = pricePerPeriod.multiply(new BigDecimal(periods));
+                overtimeTeachingPeriods = Math.max(totalTeachingPeriods - STANDARD_TEACHING_PERIODS, 0);
+                teachingAllowance = OVERTIME_TEACHING_RATE.multiply(new BigDecimal(overtimeTeachingPeriods));
                 heSo = BigDecimal.ONE;
             } else {
                 // Cán bộ hành chính tính lương theo hệ số ngạch bậc và số ngày làm việc thực tế
                 BigDecimal fullSalary = baseSalary.multiply(heSo);
                 calculatedBaseSalary = fullSalary.multiply(actualDays).divide(standardDays, 0, RoundingMode.HALF_UP);
                 teachingAllowance = BigDecimal.ZERO;
-                periods = 0; // không tính tiết dạy cho khối hành chính
             }
 
             p.setHeSoLuong(heSo);
             p.setTienGiangDay(teachingAllowance);
-            p.setTietDay(periods); // update lại số tiết
+            p.setTietDay(overtimeTeachingPeriods);
 
             // 2. Tính khấu trừ bảo hiểm xã hội (10.5% lương tính bảo hiểm)
             BigDecimal insuranceDeduction = calculatedBaseSalary.multiply(BHXH_RATE).setScale(0, RoundingMode.HALF_UP);

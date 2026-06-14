@@ -8,6 +8,8 @@ function AccountManagementPage() {
     const [showModal, setShowModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [minPasswordLength, setMinPasswordLength] = useState(8);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Form data: Đã bổ sung trường employeeId
     const [formData, setFormData] = useState({
@@ -26,6 +28,9 @@ function AccountManagementPage() {
 
     useEffect(() => {
         fetchAccounts();
+        axios.get('/api/config/status')
+            .then(res => setMinPasswordLength(res.data.minPasswordLength || 8))
+            .catch(() => setMinPasswordLength(8));
     }, []);
 
     // XỬ LÝ MỞ FORM THÔNG MINH
@@ -62,7 +67,17 @@ function AccountManagementPage() {
         setShowModal(true);
     };
     const handleSave = async () => {
+        if (isSaving) {
+            return;
+        }
+
         try {
+            if ((!isEditMode || formData.password) && formData.password.length < minPasswordLength) {
+                return alert(`Mật khẩu phải có ít nhất ${minPasswordLength} ký tự!`);
+            }
+
+            setIsSaving(true);
+
             // Lấy tên người đang đăng nhập (ví dụ: admin_thai)
             const currentUser = localStorage.getItem('username') || 'System';
 
@@ -74,10 +89,17 @@ function AccountManagementPage() {
 
             alert("✅ Xử lý thành công!");
             setShowModal(false);
-            fetchAccounts();
+            await fetchAccounts();
         } catch (err) {
-            alert(err.response?.data?.message || "❌ Có lỗi xảy ra!");
+            if (err.response?.status === 409) {
+                setShowModal(false);
+                await fetchAccounts();
+                return;
+            }
+            alert(err.response?.data?.message || "❌ Không thể xử lý tài khoản. Vui lòng thử lại!");
             console.error(err);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -198,6 +220,9 @@ function AccountManagementPage() {
                                 <div style={{ marginBottom: '15px' }}>
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Password: {isEditMode && <span style={{ fontSize: '12px', color: 'gray' }}>(Bỏ trống nếu không đổi)</span>}</label>
                                     <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} style={inputStyle} />
+                                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
+                                        Tối thiểu {minPasswordLength} ký tự.
+                                    </div>
                                 </div>
                                 <div style={{ marginBottom: '15px' }}>
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Role:</label>
@@ -218,8 +243,22 @@ function AccountManagementPage() {
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-                                    <button onClick={handleSave} style={{ backgroundColor: '#4318ff', color: 'white', padding: '10px 30px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>[ Save ]</button>
-                                    <button onClick={() => setShowModal(false)} style={{ backgroundColor: 'transparent', color: '#1b2559', padding: '10px 30px', borderRadius: '8px', border: '1px solid #1b2559', cursor: 'pointer', fontWeight: 'bold' }}>[ Cancel ]</button>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        style={{
+                                            backgroundColor: isSaving ? '#a3aed0' : '#4318ff',
+                                            color: 'white',
+                                            padding: '10px 30px',
+                                            borderRadius: '8px',
+                                            border: 'none',
+                                            cursor: isSaving ? 'not-allowed' : 'pointer',
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
+                                        {isSaving ? '[ Đang lưu... ]' : '[ Save ]'}
+                                    </button>
+                                    <button disabled={isSaving} onClick={() => setShowModal(false)} style={{ backgroundColor: 'transparent', color: '#1b2559', padding: '10px 30px', borderRadius: '8px', border: '1px solid #1b2559', cursor: isSaving ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>[ Cancel ]</button>
                                 </div>
                             </div>
                         </div>

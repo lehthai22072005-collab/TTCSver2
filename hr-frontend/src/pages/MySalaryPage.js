@@ -212,7 +212,7 @@ function MySalaryPage() {
                             <tr style={{ borderBottom: '1px dashed #e2e8f0' }}>
                                 <td style={{ padding: '12px', fontSize: '13px' }}>4. Phụ cấp thù lao giảng dạy</td>
                                 <td style={{ padding: '12px', textAlign: 'right', color: '#64748b' }}>150.000đ/tiết</td>
-                                <td style={{ padding: '12px', textAlign: 'right', color: '#05cd99', fontWeight: '500' }}>{((selectedPayroll.phuCap) || 0).toLocaleString()}đ</td>
+                                <td style={{ padding: '12px', textAlign: 'right', color: '#05cd99', fontWeight: '500' }}>{((selectedPayroll.tienGiangDay) || 0).toLocaleString()}đ</td>
                             </tr>
                             <tr style={{ borderBottom: '1px dashed #e2e8f0', color: '#ee5d50' }}>
                                 <td style={{ padding: '12px', fontSize: '13px' }}>5. Khấu trừ Bảo hiểm xã hội (BHXH)</td>

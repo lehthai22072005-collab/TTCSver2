@@ -2,19 +2,26 @@ package com.ptit.demo.controller;
 
 import com.ptit.demo.entity.Attendance;
 import com.ptit.demo.repository.AttendanceRepository;
+import com.ptit.demo.repository.EmployeeRepository;
+import com.ptit.demo.repository.PayrollRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,6 +31,12 @@ public class AttendanceController {
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private PayrollRepository payrollRepository;
 
     // 1. LẤY TẤT CẢ
     @GetMapping("/all")
@@ -65,6 +78,7 @@ public class AttendanceController {
 
     // 3. UPLOAD EXCEL
     @PostMapping("/upload")
+    @Transactional
     public ResponseEntity<?> uploadExcel(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File Excel đang trống!");
@@ -79,6 +93,9 @@ public class AttendanceController {
 
             int successCount = 0;
             int errorCount = 0;
+            Set<YearMonth> uploadedMonths = new HashSet<>();
+            Set<String> employeeDates = new HashSet<>();
+            List<String> rowErrors = new ArrayList<>();
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -89,8 +106,19 @@ public class AttendanceController {
                     if (empIdStr.isEmpty()) continue;
 
                     Attendance a = new Attendance();
-                    a.setEmployeeId((long) Double.parseDouble(empIdStr));
-                    a.setNgayCham(parseDate(row.getCell(1), formatter));
+                    long employeeId = (long) Double.parseDouble(empIdStr);
+                    if (!employeeRepository.existsById(employeeId)) {
+                        throw new RuntimeException("Không tồn tại nhân viên ID " + employeeId);
+                    }
+
+                    LocalDate attendanceDate = parseDate(row.getCell(1), formatter);
+                    String employeeDateKey = employeeId + "|" + attendanceDate;
+                    if (!employeeDates.add(employeeDateKey)) {
+                        throw new RuntimeException("Trùng nhân viên và ngày chấm công");
+                    }
+
+                    a.setEmployeeId(employeeId);
+                    a.setNgayCham(attendanceDate);
                     a.setGioVao(parseTime(row.getCell(2), formatter));
                     a.setTrangThai(formatter.formatCellValue(row.getCell(3)).trim());
 
@@ -99,23 +127,73 @@ public class AttendanceController {
 
                     a.setCoDiLam(true);
                     attendances.add(a);
+                    uploadedMonths.add(YearMonth.from(attendanceDate));
                     successCount++;
                 } catch (Exception rowEx) {
-                    System.out.println("Lỗi dữ liệu ở dòng Excel số " + (i + 1) + ": " + rowEx.getMessage());
+                    rowErrors.add("Dòng " + (i + 1) + ": " + rowEx.getMessage());
                     errorCount++;
                 }
+            }
+
+            if (errorCount > 0) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "File có " + errorCount + " dòng lỗi. Không có dữ liệu nào được lưu.",
+                        "errors", rowErrors
+                ));
             }
 
             if (attendances.isEmpty()) {
                 return ResponseEntity.badRequest().body("Không đọc được dữ liệu hợp lệ! Vui lòng kiểm tra định dạng.");
             }
 
+            if (uploadedMonths.size() != 1) {
+                return ResponseEntity.badRequest().body("Mỗi file chỉ được chứa dữ liệu của đúng một tháng.");
+            }
+
+            YearMonth uploadedMonth = uploadedMonths.iterator().next();
+            String salaryMonth = uploadedMonth.format(DateTimeFormatter.ofPattern("MM/yyyy"));
+            if (payrollRepository.existsByThangNamAndTrangThaiChotTrue(salaryMonth)) {
+                return ResponseEntity.badRequest().body(
+                        "Tháng " + salaryMonth + " đã chốt lương nên không thể upload lại chấm công."
+                );
+            }
+
+            LocalDate startDate = uploadedMonth.atDay(1);
+            LocalDate endDate = uploadedMonth.atEndOfMonth();
+            long replacedCount = attendanceRepository.countByNgayChamBetween(startDate, endDate);
+
+            attendanceRepository.deleteByNgayChamBetween(startDate, endDate);
+            payrollRepository.deleteByThangNamAndTrangThaiChotFalse(salaryMonth);
             attendanceRepository.saveAll(attendances);
-            return ResponseEntity.ok(Map.of("message", "Upload thành công " + successCount + " dòng. Bỏ qua " + errorCount + " dòng lỗi."));
+            return ResponseEntity.ok(Map.of(
+                    "message", "Upload thành công " + successCount + " dòng cho tháng " + salaryMonth
+                            + ". Đã thay thế " + replacedCount + " dòng cũ.",
+                    "month", salaryMonth,
+                    "uploadedRows", successCount,
+                    "replacedRows", replacedCount
+            ));
 
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Lỗi hệ thống: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/month-status")
+    public ResponseEntity<?> getMonthStatus(@RequestParam String month) {
+        try {
+            YearMonth yearMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern("MM/yyyy"));
+            long rowCount = attendanceRepository.countByNgayChamBetween(
+                    yearMonth.atDay(1),
+                    yearMonth.atEndOfMonth()
+            );
+            return ResponseEntity.ok(Map.of(
+                    "month", month,
+                    "uploaded", rowCount > 0,
+                    "rowCount", rowCount
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Kỳ chấm công không hợp lệ."));
         }
     }
 

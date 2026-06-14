@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
@@ -10,6 +10,21 @@ function SalaryPage() {
     const [month, setMonth] = useState(formattedCurrentMonth);
     const [salaryPreview, setSalaryPreview] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [attendanceUploaded, setAttendanceUploaded] = useState(false);
+
+    useEffect(() => {
+        const fetchAttendanceStatus = async () => {
+            try {
+                const res = await axios.get(`/api/attendance/month-status?month=${encodeURIComponent(month)}`);
+                setAttendanceUploaded(res.data.uploaded);
+            } catch (err) {
+                setAttendanceUploaded(false);
+            }
+        };
+
+        setSalaryPreview([]);
+        fetchAttendanceStatus();
+    }, [month]);
 
     // 1. Xem trước bảng lương nháp dựa trên dữ liệu chấm công thực tế
     const handleCalculate = async () => {
@@ -42,9 +57,29 @@ function SalaryPage() {
         }
     };
 
-    const handleExportExcel = () => {
-        // Mở URL export trong tab mới để trình duyệt tải file về
-        window.open(`/api/salary/export?month=${month}`, '_blank');
+    const handleExportExcel = async () => {
+        if (!attendanceUploaded) {
+            return alert(`Tháng ${month} chưa upload file chấm công nên chưa thể xuất Excel.`);
+        }
+
+        try {
+            const res = await axios.get(`/api/salary/export?month=${encodeURIComponent(month)}`, {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `BangLuong_${month.replace('/', '_')}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            const errorText = err.response?.data instanceof Blob
+                ? await err.response.data.text()
+                : err.response?.data;
+            alert(errorText || "Không thể xuất file Excel.");
+        }
     };
 
     // VÒNG LẶP TỰ ĐỘNG TẠO MẢNG CHỨA 12 THÁNG CỦA NĂM HIỆN TẠI
@@ -93,7 +128,9 @@ function SalaryPage() {
 
                             <button
                                 onClick={handleExportExcel}
-                                style={{ padding: '10px 20px', backgroundColor: '#05cd99', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}
+                                disabled={!attendanceUploaded}
+                                title={!attendanceUploaded ? `Tháng ${month} chưa upload chấm công` : ''}
+                                style={{ padding: '10px 20px', backgroundColor: attendanceUploaded ? '#05cd99' : '#a3aed0', color: '#fff', border: 'none', borderRadius: '12px', cursor: attendanceUploaded ? 'pointer' : 'not-allowed', fontWeight: 'bold' }}
                             >
                                 Xuất Excel 📊
                             </button>

@@ -47,6 +47,36 @@ public class AccountController {
         }
     }
 
+    private boolean employeeHasAccount(Long employeeId) {
+        String sql = """
+                SELECT COUNT(*) FROM (
+                    SELECT employee_id FROM admin
+                    UNION ALL SELECT employee_id FROM accountant
+                    UNION ALL SELECT employee_id FROM staff
+                    UNION ALL SELECT employee_id FROM ban_giam_hieu
+                    UNION ALL SELECT employee_id FROM human_resources
+                ) accounts
+                WHERE employee_id = ?
+                """;
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, employeeId);
+        return count != null && count > 0;
+    }
+
+    private boolean usernameExists(String username) {
+        String sql = """
+                SELECT COUNT(*) FROM (
+                    SELECT username FROM admin
+                    UNION ALL SELECT username FROM accountant
+                    UNION ALL SELECT username FROM staff
+                    UNION ALL SELECT username FROM ban_giam_hieu
+                    UNION ALL SELECT username FROM human_resources
+                ) accounts
+                WHERE username = ?
+                """;
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, username);
+        return count != null && count > 0;
+    }
+
     // --- HÀM HỖ TRỢ GHI LOG TỰ ĐỘNG ---
     private void ghiLogHeThong(String hanhDong, String nguoiDung) {
         try {
@@ -142,6 +172,27 @@ public class AccountController {
             String password = data.get("password");
             String role = data.get("role");
             String status = data.get("status") != null ? data.get("status") : "Active";
+            int minPasswordLength = configService.getInt("minPasswordLength", 8);
+
+            if (employeeHasAccount(empId)) {
+                return ResponseEntity.status(409).body(Map.of(
+                        "message", "Nhân sự này đã được cấp tài khoản."));
+            }
+
+            if (username == null || username.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Username không được để trống."));
+            }
+
+            if (usernameExists(username)) {
+                return ResponseEntity.status(409).body(Map.of(
+                        "message", "Username đã được sử dụng."));
+            }
+
+            if (password == null || password.length() < minPasswordLength) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Mật khẩu phải có ít nhất " + minPasswordLength + " ký tự!"));
+            }
 
             String table = getTableName(role);
 
@@ -172,8 +223,9 @@ public class AccountController {
                     "message", "Tạo tài khoản thành công!",
                     "emailMessage", emailMessage));
         } catch (Exception e) {
+            System.out.println("Không thể tạo tài khoản: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of(
-                    "message", "Lỗi tạo User: " + e.getMessage()));
+                    "message", "Không thể tạo tài khoản. Vui lòng tải lại danh sách và thử lại."));
         }
     }
 
@@ -188,15 +240,24 @@ public class AccountController {
             String password = data.get("password");
             String status = data.get("status");
             String actionBy = data.get("actionBy");
+            int minPasswordLength = configService.getInt("minPasswordLength", 8);
+
+            if (password != null && !password.isBlank() && password.length() < minPasswordLength) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Mật khẩu phải có ít nhất " + minPasswordLength + " ký tự!"));
+            }
 
             String oldTable = getTableName(oldRole);
             String newTable = getTableName(newRole);
 
-            List<Long> ids = jdbcTemplate.queryForList("SELECT employee_id FROM " + oldTable + " WHERE username = ?",
-                    Long.class, oldUsername);
-            if (ids.isEmpty())
+            List<Map<String, Object>> oldAccounts = jdbcTemplate.queryForList(
+                    "SELECT employee_id, password FROM " + oldTable + " WHERE username = ?",
+                    oldUsername
+            );
+            if (oldAccounts.isEmpty())
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy TK cũ."));
-            Long empId = ids.get(0);
+            Long empId = ((Number) oldAccounts.get(0).get("employee_id")).longValue();
+            String currentPassword = String.valueOf(oldAccounts.get(0).get("password"));
 
             Employee emp = employeeRepository.findById(empId).orElse(null);
             if (emp != null) {
@@ -209,7 +270,7 @@ public class AccountController {
                 jdbcTemplate.update("DELETE FROM " + oldTable + " WHERE username = ?", oldUsername);
                 jdbcTemplate.update(
                         "INSERT INTO " + newTable + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)",
-                        username, (password != null && !password.isEmpty()) ? password : "123", empId, status);
+                        username, (password != null && !password.isEmpty()) ? password : currentPassword, empId, status);
             } else {
                 jdbcTemplate.update("UPDATE " + oldTable + " SET username = ?, status = ? WHERE username = ?", username,
                         status, oldUsername);

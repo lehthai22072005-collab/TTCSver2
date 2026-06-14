@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Key, X, Camera } from 'lucide-react';
+import axios from 'axios';
 import '../App.css';
 import './TopBar.css';
 
@@ -10,8 +11,16 @@ function TopBar() {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await axios.post('/api/auth/logout', { username: userName });
+        } catch (error) {
+            console.error('Không thể ghi nhận đăng xuất:', error);
+        }
         localStorage.removeItem('username');
+        localStorage.removeItem('role');
+        localStorage.removeItem('employeeId');
+        localStorage.removeItem('fullName');
         navigate('/');
     };
 

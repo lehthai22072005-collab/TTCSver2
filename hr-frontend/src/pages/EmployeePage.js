@@ -16,13 +16,40 @@ const FACULTY_DEPARTMENTS = [
 ];
 
 const POSITION_ROLES = [
-    'Giảng viên',
-    'Hiệu trưởng',
-    'Kế toán',
     'Quản trị viên',
-    'Chuyên viên',
-    'Nhân viên'
+    'Giảng viên',
+    'Nhân viên',
+    'Kế toán',
+    'Ban giám hiệu'
 ];
+
+const PERSONNEL_GROUPS = [
+    'Quản trị',
+    'Giảng viên',
+    'Nhân viên',
+    'Lãnh đạo'
+];
+
+const getDisplayPosition = (employee) => {
+    if (employee?.nhomNhanSu === 'Quản trị') return 'Quản trị viên';
+    if (employee?.nhomNhanSu === 'Giảng viên') return 'Giảng viên';
+    if (employee?.nhomNhanSu === 'Lãnh đạo') return 'Ban giám hiệu';
+
+    const department = (employee?.department || '').toLowerCase();
+    if (department.includes('kế toán') || department.includes('tài chính')) {
+        return 'Kế toán';
+    }
+
+    return 'Nhân viên';
+};
+
+const toEmployeePayload = (employee) => {
+    const payload = { ...employee };
+    delete payload.position;
+    delete payload.loaiGiangVien;
+    delete payload.hocHam;
+    return payload;
+};
 
 function EmployeePage() {
     const [employees, setEmployees] = useState([]);
@@ -43,8 +70,6 @@ function EmployeePage() {
         contractEndDate: '',
         baseSalary: 10000000,
         nhomNhanSu: 'Giảng viên',
-        loaiGiangVien: 'Cơ hữu',
-        hocHam: 'Không',
         ngachCongChuc: '',
         bacLuong: 1
     });
@@ -72,7 +97,7 @@ function EmployeePage() {
             return alert("Vui lòng điền họ tên và email bắt buộc!");
         }
         try {
-            await axios.post("/api/employees", newEmployee);
+            await axios.post("/api/employees", toEmployeePayload(newEmployee));
             alert("✅ Hệ thống: Thêm mới hồ sơ nhân sự thành công!");
             setShowCreateModal(false);
             setNewEmployee({
@@ -86,8 +111,6 @@ function EmployeePage() {
                 contractEndDate: '',
                 baseSalary: 10000000,
                 nhomNhanSu: 'Giảng viên',
-                loaiGiangVien: 'Cơ hữu',
-                hocHam: 'Không',
                 ngachCongChuc: '',
                 bacLuong: 1
             });
@@ -98,16 +121,12 @@ function EmployeePage() {
     };
 
     const openUpdateModal = (emp) => {
-        const sanitizedEmp = { ...emp };
+        const sanitizedEmp = { ...emp, position: getDisplayPosition(emp) };
 
         // LOGIC LỌC: Nếu không nằm trong list chuẩn thì đẩy về giá trị dự phòng
         if (!FACULTY_DEPARTMENTS.includes(sanitizedEmp.department)) {
             sanitizedEmp.department = 'Không thuộc khoa';
         }
-        if (!POSITION_ROLES.includes(sanitizedEmp.position)) {
-            sanitizedEmp.position = 'Nhân viên';
-        }
-
         setSelectedEmployee(sanitizedEmp);
         setShowUpdateModal(true);
     };
@@ -117,7 +136,7 @@ function EmployeePage() {
             return alert("Vui lòng điền họ tên và email bắt buộc!");
         }
         try {
-            await axios.put(`/api/employees/${selectedEmployee.id}`, selectedEmployee);
+            await axios.put(`/api/employees/${selectedEmployee.id}`, toEmployeePayload(selectedEmployee));
             alert("✅ Hệ thống: Cập nhật hồ sơ nhân sự thành công!");
             setShowUpdateModal(false);
             await fetchEmployees();
@@ -214,7 +233,7 @@ function EmployeePage() {
                                                     <td style={{ ...tdStyle, fontWeight: '700', color: '#1b2559' }}>{emp.fullName}</td>
                                                     <td style={{ ...tdStyle, fontWeight: 'bold', color: '#4318ff' }}>{emp.nhomNhanSu || "Chưa phân loại"}</td>
                                                     <td style={tdStyle}>{emp.department || "Chưa phân bổ"}</td>
-                                                    <td style={tdStyle}>{emp.position || "N/A"}</td>
+                                                    <td style={tdStyle}>{getDisplayPosition(emp)}</td>
                                                     <td style={{ ...tdStyle, color: '#4318ff', fontWeight: '500' }}>{formatDate(emp.contractStartDate)}</td>
                                                     <td style={{ ...tdStyle, color: '#ee5d50', fontWeight: '500' }}>{formatDate(emp.contractEndDate)}</td>
                                                     <td style={tdStyle}>{(emp.baseSalary || 0).toLocaleString()}đ</td>
@@ -267,43 +286,18 @@ function EmployeePage() {
                             <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
                                 <label style={labelForm}>Nhóm nhân sự</label>
                                 <select style={inputStyle} value={newEmployee.nhomNhanSu} onChange={e => setNewEmployee({...newEmployee, nhomNhanSu: e.target.value})}>
-                                    <option value="Giảng viên">Giảng viên</option>
-                                    <option value="Cán bộ hành chính">Cán bộ hành chính</option>
-                                    <option value="Ban Giám Hiệu">Ban Giám Hiệu</option>
-                                    <option value="Nhân viên hỗ trợ">Nhân viên hỗ trợ</option>
+                                    {PERSONNEL_GROUPS.map(group => <option key={group} value={group}>{group}</option>)}
                                 </select>
                             </div>
 
-                            {newEmployee.nhomNhanSu === 'Giảng viên' ? (
-                                <>
-                                    <div>
-                                        <label style={labelForm}>Loại giảng viên</label>
-                                        <select style={inputStyle} value={newEmployee.loaiGiangVien} onChange={e => setNewEmployee({...newEmployee, loaiGiangVien: e.target.value})}>
-                                            <option value="Cơ hữu">Cơ hữu</option>
-                                            <option value="Thỉnh giảng">Thỉnh giảng</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={labelForm}>Học hàm</label>
-                                        <select style={inputStyle} value={newEmployee.hocHam} onChange={e => setNewEmployee({...newEmployee, hocHam: e.target.value})}>
-                                            <option value="Không">Không</option>
-                                            <option value="Giáo sư">Giáo sư</option>
-                                            <option value="Phó Giáo sư">Phó Giáo sư</option>
-                                        </select>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div>
-                                        <label style={labelForm}>Ngạch công chức</label>
-                                        <input type="text" style={inputStyle} value={newEmployee.ngachCongChuc} onChange={e => setNewEmployee({...newEmployee, ngachCongChuc: e.target.value})} placeholder="VD: Chuyên viên chính" />
-                                    </div>
-                                    <div>
-                                        <label style={labelForm}>Bậc lương (Hệ số)</label>
-                                        <input type="number" style={inputStyle} value={newEmployee.bacLuong} onChange={e => setNewEmployee({...newEmployee, bacLuong: Number(e.target.value)})} />
-                                    </div>
-                                </>
-                            )}
+                            <div>
+                                <label style={labelForm}>Ngạch công chức</label>
+                                <input type="text" style={inputStyle} value={newEmployee.ngachCongChuc} onChange={e => setNewEmployee({...newEmployee, ngachCongChuc: e.target.value})} placeholder="VD: Chuyên viên chính" />
+                            </div>
+                            <div>
+                                <label style={labelForm}>Bậc lương (Hệ số)</label>
+                                <input type="number" min="1" style={inputStyle} value={newEmployee.bacLuong} onChange={e => setNewEmployee({...newEmployee, bacLuong: Number(e.target.value)})} />
+                            </div>
 
 
                             {/* DÙNG THẺ SELECT CHO PHÒNG BAN */}
@@ -320,6 +314,7 @@ function EmployeePage() {
                                 <select style={inputStyle} value={newEmployee.position} onChange={e => setNewEmployee({...newEmployee, position: e.target.value})}>
                                     {POSITION_ROLES.map(p => <option key={p} value={p}>{p}</option>)}
                                 </select>
+                                <small style={helperTextStyle}>Chỉ dùng để tham khảo khi Admin cấp tài khoản, không lưu vào hồ sơ.</small>
                             </div>
 
                             <div>
@@ -327,7 +322,7 @@ function EmployeePage() {
                                 <input type="text" style={inputStyle} value={newEmployee.phone} onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})} placeholder="0123456789" />
                             </div>
                             <div>
-                                <label style={labelForm}>Học vị / Học hàm</label>
+                                <label style={labelForm}>Học vị / Bằng cấp</label>
                                 <select style={inputStyle} value={newEmployee.academicDegree} onChange={e => setNewEmployee({...newEmployee, academicDegree: e.target.value})}>
                                     <option value="Cử nhân">Cử nhân</option>
                                     <option value="Kỹ sư">Kỹ sư</option>
@@ -378,44 +373,19 @@ function EmployeePage() {
 
                             <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
                                 <label style={labelForm}>Nhóm nhân sự</label>
-                                <select style={inputStyle} value={selectedEmployee.nhomNhanSu || 'Cán bộ hành chính'} onChange={e => setSelectedEmployee({...selectedEmployee, nhomNhanSu: e.target.value})}>
-                                    <option value="Giảng viên">Giảng viên</option>
-                                    <option value="Cán bộ hành chính">Cán bộ hành chính</option>
-                                    <option value="Ban Giám Hiệu">Ban Giám Hiệu</option>
-                                    <option value="Nhân viên hỗ trợ">Nhân viên hỗ trợ</option>
+                                <select style={inputStyle} value={PERSONNEL_GROUPS.includes(selectedEmployee.nhomNhanSu) ? selectedEmployee.nhomNhanSu : 'Nhân viên'} onChange={e => setSelectedEmployee({...selectedEmployee, nhomNhanSu: e.target.value})}>
+                                    {PERSONNEL_GROUPS.map(group => <option key={group} value={group}>{group}</option>)}
                                 </select>
                             </div>
 
-                            {selectedEmployee.nhomNhanSu === 'Giảng viên' ? (
-                                <>
-                                    <div>
-                                        <label style={labelForm}>Loại giảng viên</label>
-                                        <select style={inputStyle} value={selectedEmployee.loaiGiangVien || 'Cơ hữu'} onChange={e => setSelectedEmployee({...selectedEmployee, loaiGiangVien: e.target.value})}>
-                                            <option value="Cơ hữu">Cơ hữu</option>
-                                            <option value="Thỉnh giảng">Thỉnh giảng</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={labelForm}>Học hàm</label>
-                                        <select style={inputStyle} value={selectedEmployee.hocHam || 'Không'} onChange={e => setSelectedEmployee({...selectedEmployee, hocHam: e.target.value})}>
-                                            <option value="Không">Không</option>
-                                            <option value="Giáo sư">Giáo sư</option>
-                                            <option value="Phó Giáo sư">Phó Giáo sư</option>
-                                        </select>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div>
-                                        <label style={labelForm}>Ngạch công chức</label>
-                                        <input type="text" style={inputStyle} value={selectedEmployee.ngachCongChuc || ''} onChange={e => setSelectedEmployee({...selectedEmployee, ngachCongChuc: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <label style={labelForm}>Bậc lương (Hệ số)</label>
-                                        <input type="number" style={inputStyle} value={selectedEmployee.bacLuong || 1} onChange={e => setSelectedEmployee({...selectedEmployee, bacLuong: Number(e.target.value)})} />
-                                    </div>
-                                </>
-                            )}
+                            <div>
+                                <label style={labelForm}>Ngạch công chức</label>
+                                <input type="text" style={inputStyle} value={selectedEmployee.ngachCongChuc || ''} onChange={e => setSelectedEmployee({...selectedEmployee, ngachCongChuc: e.target.value})} />
+                            </div>
+                            <div>
+                                <label style={labelForm}>Bậc lương (Hệ số)</label>
+                                <input type="number" min="1" style={inputStyle} value={selectedEmployee.bacLuong || 1} onChange={e => setSelectedEmployee({...selectedEmployee, bacLuong: Number(e.target.value)})} />
+                            </div>
 
 
                             {/* DÙNG THẺ SELECT CHO PHÒNG BAN */}
@@ -432,6 +402,7 @@ function EmployeePage() {
                                 <select style={inputStyle} value={selectedEmployee.position} onChange={e => setSelectedEmployee({...selectedEmployee, position: e.target.value})}>
                                     {POSITION_ROLES.map(p => <option key={p} value={p}>{p}</option>)}
                                 </select>
+                                <small style={helperTextStyle}>Thay đổi tại đây không làm đổi tài khoản hoặc quyền đăng nhập.</small>
                             </div>
 
                             <div>
@@ -439,7 +410,7 @@ function EmployeePage() {
                                 <input type="text" style={inputStyle} value={selectedEmployee.phone || ''} onChange={e => setSelectedEmployee({...selectedEmployee, phone: e.target.value})} />
                             </div>
                             <div>
-                                <label style={labelForm}>Học vị / Học hàm</label>
+                                <label style={labelForm}>Học vị / Bằng cấp</label>
                                 <select style={inputStyle} value={selectedEmployee.academicDegree || 'Cử nhân'} onChange={e => setSelectedEmployee({...selectedEmployee, academicDegree: e.target.value})}>
                                     <option value="Cử nhân">Cử nhân</option>
                                     <option value="Kỹ sư">Kỹ sư</option>
@@ -481,6 +452,7 @@ const tdStyle = { padding: '18px 10px', fontSize: '0.92rem', color: '#2b3674' };
 const formGridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', textAlign: 'left' };
 const labelForm = { fontSize: '0.85rem', fontWeight: 'bold', color: '#2b3674', display: 'block', marginBottom: '5px' };
 const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.9rem', color: '#2b3674', fontFamily: 'inherit' };
+const helperTextStyle = { display: 'block', marginTop: '5px', color: '#718096', fontSize: '0.75rem', lineHeight: 1.4 };
 
 const btnUpdateStyle = { padding: '6px 20px', backgroundColor: '#e6fff5', color: '#05cd99', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' };
 

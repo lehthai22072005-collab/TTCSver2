@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
@@ -12,6 +12,13 @@ function ChangePasswordPage() {
     // State hiển thị thông báo
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
+    const [minPasswordLength, setMinPasswordLength] = useState(8);
+
+    useEffect(() => {
+        axios.get('/api/config/status')
+            .then(response => setMinPasswordLength(response.data.minPasswordLength || 8))
+            .catch(() => setMinPasswordLength(8));
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault(); // Ngăn trang bị reload khi ấn submit
@@ -23,9 +30,9 @@ function ChangePasswordPage() {
             setMessage('Mật khẩu xác nhận không trùng khớp!');
             return;
         }
-        if (newPassword.length < 6) {
+        if (newPassword.length < minPasswordLength) {
             setIsError(true);
-            setMessage('Mật khẩu mới phải có ít nhất 6 ký tự!');
+            setMessage(`Mật khẩu mới phải có ít nhất ${minPasswordLength} ký tự!`);
             return;
         }
 
@@ -99,6 +106,9 @@ function ChangePasswordPage() {
                                     style={inputStyle}
                                     required
                                 />
+                                <div style={{ color: '#94a3b8', fontSize: '13px', marginTop: '7px' }}>
+                                    Tối thiểu {minPasswordLength} ký tự theo cấu hình hệ thống.
+                                </div>
                             </div>
 
                             <div style={{ marginBottom: '20px' }}>

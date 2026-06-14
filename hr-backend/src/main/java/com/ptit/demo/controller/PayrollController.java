@@ -3,6 +3,7 @@ package com.ptit.demo.controller;
 import com.ptit.demo.entity.Payroll;
 import com.ptit.demo.entity.TeachingDeclaration;
 import com.ptit.demo.repository.EmployeeRepository;
+import com.ptit.demo.repository.AttendanceRepository;
 import com.ptit.demo.repository.PayrollRepository;
 import com.ptit.demo.repository.TeachingDeclarationRepository;
 import com.ptit.demo.service.EmailService;
@@ -12,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +39,9 @@ public class PayrollController {
     private EmployeeRepository employeeRepository;
 
     @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Autowired
     private EmailService emailService;
 
     @Autowired
@@ -43,6 +49,12 @@ public class PayrollController {
 
     @GetMapping("/preview")
     public ResponseEntity<?> previewSalary(@RequestParam String month) {
+        if (!hasAttendanceData(month)) {
+            return ResponseEntity.badRequest().body(
+                    "Tháng " + month + " chưa upload file chấm công."
+            );
+        }
+
         if (payrollRepository.existsByThangNamAndTrangThaiChotTrue(month)) {
             return ResponseEntity.badRequest().body("Tháng " + month + " đã được chốt lương. Không thể tính lại!");
         }
@@ -132,15 +144,26 @@ public class PayrollController {
     }
 
     @GetMapping("/export")
-    public ResponseEntity<byte[]> exportSalaryToExcel(@RequestParam String month) {
+    public ResponseEntity<?> exportSalaryToExcel(@RequestParam String month) {
+        if (!hasAttendanceData(month)) {
+            return ResponseEntity.badRequest().body(
+                    "Không thể xuất Excel vì tháng " + month + " chưa upload file chấm công."
+            );
+        }
+
         List<Payroll> payrolls = payrollRepository.findByThangNam(month);
+        if (payrolls.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                    "Vui lòng chạy tính lương tháng " + month + " trước khi xuất Excel."
+            );
+        }
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Bảng lương tháng " + month.replace("/", "-"));
 
             // Create Header Row
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"Mã NV", "Họ Tên", "Nhóm Nhân Sự", "Số Ngày Công", "Số Tiết Dạy", "Lương CB", "Hệ Số", "Phụ Cấp", "Bảo Hiểm", "Thuế TNCN", "Thưởng", "Phạt", "Thực Lĩnh"};
+            String[] headers = {"Mã NV", "Họ Tên", "Nhóm Nhân Sự", "Số Ngày Công", "Số Tiết Vượt Giờ", "Lương CB", "Hệ Số", "Tiền Giảng Dạy", "Bảo Hiểm", "Thuế TNCN", "Thưởng", "Phạt", "Thực Lĩnh"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
@@ -162,7 +185,7 @@ public class PayrollController {
                 row.createCell(4).setCellValue(p.getTietDay() != null ? p.getTietDay() : 0);
                 row.createCell(5).setCellValue(p.getLuongCoBan() != null ? p.getLuongCoBan().doubleValue() : 0);
                 row.createCell(6).setCellValue(p.getHeSoLuong() != null ? p.getHeSoLuong().doubleValue() : 1.0);
-                row.createCell(7).setCellValue(p.getPhuCap() != null ? p.getPhuCap().doubleValue() : 0);
+                row.createCell(7).setCellValue(p.getTienGiangDay() != null ? p.getTienGiangDay().doubleValue() : 0);
                 row.createCell(8).setCellValue(p.getBhxhKhauTru() != null ? p.getBhxhKhauTru().doubleValue() : 0);
                 row.createCell(9).setCellValue(p.getThueTncn() != null ? p.getThueTncn().doubleValue() : 0);
                 row.createCell(10).setCellValue(p.getTienThuong() != null ? p.getTienThuong().doubleValue() : 0);
@@ -185,6 +208,18 @@ public class PayrollController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    private boolean hasAttendanceData(String month) {
+        try {
+            YearMonth yearMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern("MM/yyyy"));
+            return attendanceRepository.existsByNgayChamBetween(
+                    yearMonth.atDay(1),
+                    yearMonth.atEndOfMonth()
+            );
+        } catch (Exception e) {
+            return false;
         }
     }
 }

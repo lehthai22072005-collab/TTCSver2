@@ -1,13 +1,10 @@
 package com.ptit.demo.controller;
 
-import com.ptit.demo.entity.Accountant;
 import com.ptit.demo.entity.Employee;
-import com.ptit.demo.entity.Teacher;
-import com.ptit.demo.repository.AccountantRepository;
 import com.ptit.demo.repository.EmployeeRepository;
-import com.ptit.demo.repository.TeacherRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,12 +17,6 @@ public class EmployeeController {
     @Autowired
     private EmployeeRepository employeeRepository;
 
-    @Autowired
-    private AccountantRepository accountantRepository;
-
-    @Autowired
-    private TeacherRepository teacherRepository;
-
     // 1. Lấy danh sách toàn bộ nhân viên (READ)
     @GetMapping
     public List<Employee> getAll() {
@@ -34,28 +25,32 @@ public class EmployeeController {
 
     // 2. Thêm nhân viên mới (HR chỉ thêm hồ sơ)
     @PostMapping
+    @Transactional
     public Employee createEmployee(@RequestBody Employee employee) {
-        // Lưu thông tin hồ sơ vào bảng employee. 
-        // Tài khoản sẽ do Admin cấp.
+        // Chức vụ trên form chỉ là gợi ý để Admin cấp tài khoản, không quyết định quyền đăng nhập.
+        employee.setPosition(null);
+        employee.setLoaiGiangVien(null);
+        employee.setHocHam(null);
         return employeeRepository.save(employee);
     }
 
-    // 3. Cập nhật hồ sơ nhân sự (UPDATE) - Đã fix đầy đủ 7 trường dữ liệu
+    // 3. Cập nhật đầy đủ hồ sơ nhân sự, trừ chức vụ hiển thị.
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<Employee> updateEmployee(@PathVariable Long id, @RequestBody Employee details) {
         return employeeRepository.findById(id).map(emp -> {
-            // Cập nhật các trường cơ bản
             emp.setFullName(details.getFullName());
             emp.setEmail(details.getEmail());
-            emp.setPosition(details.getPosition());
             emp.setDepartment(details.getDepartment());
+            emp.setAcademicDegree(details.getAcademicDegree());
+            emp.setContractStartDate(details.getContractStartDate());
+            emp.setContractEndDate(details.getContractEndDate());
+            emp.setPhone(details.getPhone());
+            emp.setBaseSalary(details.getBaseSalary());
+            emp.setNhomNhanSu(details.getNhomNhanSu());
+            emp.setNgachCongChuc(details.getNgachCongChuc());
+            emp.setBacLuong(details.getBacLuong());
 
-            // Cập nhật các trường mở rộng (Quan trọng)
-            emp.setAcademicDegree(details.getAcademicDegree());   // Bằng cấp
-            emp.setContractEndDate(details.getContractEndDate()); // Ngày hết hạn HĐ
-            emp.setPhone(details.getPhone());                     // Số điện thoại
-
-            // Lưu lại vào Database
             return ResponseEntity.ok(employeeRepository.save(emp));
         }).orElse(ResponseEntity.notFound().build());
     }

@@ -5,6 +5,7 @@ import TopBar from '../components/TopBar';
 
 function SystemConfigPage() {
     const [config, setConfig] = useState({
+        minPasswordLength: '8',
         maxLoginAttempts: '5',
         maintenanceMode: 'false',
         emailEnabled: 'false',
@@ -29,6 +30,7 @@ function SystemConfigPage() {
 
             setConfig(prev => ({
                 ...prev,
+                minPasswordLength: res.data.minPasswordLength || '8',
                 maxLoginAttempts: res.data.maxLoginAttempts || '5',
                 maintenanceMode: res.data.maintenanceMode || 'false',
                 emailEnabled: res.data.emailEnabled || 'false',
@@ -68,7 +70,14 @@ function SystemConfigPage() {
     };
 
     const validateConfig = () => {
+        const minPasswordLength = Number(config.minPasswordLength);
         const maxLoginAttempts = Number(config.maxLoginAttempts);
+
+        if (!Number.isInteger(minPasswordLength) || minPasswordLength < 4 || minPasswordLength > 128) {
+            setIsError(true);
+            setMessage('Độ dài mật khẩu tối thiểu phải là số nguyên từ 4 đến 128!');
+            return false;
+        }
 
         if (!maxLoginAttempts || maxLoginAttempts < 1) {
             setIsError(true);
@@ -241,6 +250,29 @@ function SystemConfigPage() {
                     )}
 
                     <div style={gridStyle}>
+
+                        <div style={{ ...cardStyle, ...wideCard }}>
+                            <div style={iconBox}>🔐</div>
+                            <h3 style={cardTitle}>Độ dài mật khẩu tối thiểu</h3>
+                            <p style={cardDesc}>
+                                Áp dụng khi Admin tạo tài khoản, cập nhật mật khẩu và khi người dùng tự đổi mật khẩu.
+                            </p>
+
+                            <label style={labelStyle}>Số ký tự tối thiểu:</label>
+                            <input
+                                type="number"
+                                min="4"
+                                max="128"
+                                name="minPasswordLength"
+                                value={config.minPasswordLength}
+                                onChange={handleChange}
+                                style={inputStyle}
+                            />
+
+                            <div style={hintStyle}>
+                                Khuyến nghị từ 8 ký tự trở lên.
+                            </div>
+                        </div>
 
                         {/* Thẻ Lần nhập sai tối đa (Đã mở rộng full width) */}
                         <div style={{ ...cardStyle, ...wideCard }}>
