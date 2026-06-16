@@ -1,9 +1,6 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
-    container_name: hr_mysql
     environment:
       MYSQL_ROOT_PASSWORD: admin123
       MYSQL_DATABASE: hr_management
@@ -20,7 +17,6 @@ services:
 
   backend:
     build: ./hr-backend
-    container_name: hr_backend
     ports:
       - "8080:8080"
     environment:
@@ -34,7 +30,6 @@ services:
 
   frontend:
     build: ./hr-frontend
-    container_name: hr_frontend
     ports:
       - "3000:3000"
     depends_on:

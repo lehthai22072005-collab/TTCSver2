@@ -1,11 +1,16 @@
 package com.ptit.demo.controller;
 
 import com.ptit.demo.entity.Employee;
+import com.ptit.demo.entity.KpiEvaluation;
+import com.ptit.demo.entity.LeaveRequest;
 import com.ptit.demo.entity.Payroll;
+import com.ptit.demo.entity.RewardDiscipline;
 import com.ptit.demo.entity.SystemLog;
 import com.ptit.demo.entity.MonthlyBudget;
 import com.ptit.demo.repository.EmployeeRepository;
+import com.ptit.demo.repository.KpiEvaluationRepository;
 import com.ptit.demo.repository.PayrollRepository;
+import com.ptit.demo.repository.RewardDisciplineRepository;
 import com.ptit.demo.repository.SystemLogRepository;
 import com.ptit.demo.repository.MonthlyBudgetRepository;
 import com.ptit.demo.repository.LeaveRequestRepository;
@@ -15,7 +20,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +42,8 @@ public class DashboardController {
     @Autowired private SystemLogRepository systemLogRepository;
     @Autowired private MonthlyBudgetRepository monthlyBudgetRepository;
     @Autowired private LeaveRequestRepository leaveRequestRepository;
+    @Autowired private KpiEvaluationRepository kpiEvaluationRepository;
+    @Autowired private RewardDisciplineRepository rewardDisciplineRepository;
 
     // 1. API thống kê dành cho Kế toán
     @GetMapping("/stats")
@@ -213,5 +226,161 @@ public class DashboardController {
         }
 
         return ResponseEntity.ok(resultList);
+    }
+
+    @GetMapping("/hr-overview-report")
+    public ResponseEntity<?> getHrOverviewReport() {
+        LocalDate today = LocalDate.now();
+        LocalDate expiringLimit = today.plusDays(60);
+        int currentYear = Year.now().getValue();
+
+        List<Employee> employees = employeeRepository.findAll();
+        List<Payroll> lockedPayrolls = payrollRepository.findByTrangThaiChotTrue();
+        List<KpiEvaluation> kpis = kpiEvaluationRepository.findAll();
+        List<LeaveRequest> leaveRequests = leaveRequestRepository.findAll();
+        List<RewardDiscipline> rewardDisciplines = rewardDisciplineRepository.findAll();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("generatedAt", java.time.LocalDateTime.now().toString());
+
+        Map<String, Long> departmentDistribution = employees.stream()
+                .collect(Collectors.groupingBy(
+                        emp -> hasText(emp.getDepartment()) ? emp.getDepartment() : "Chưa phân bổ",
+                        LinkedHashMap::new,
+                        Collectors.counting()
+                ));
+
+        Map<String, Object> personnelOverview = new LinkedHashMap<>();
+        personnelOverview.put("totalEmployees", employees.size());
+        personnelOverview.put("departmentDistribution", departmentDistribution);
+        response.put("personnelOverview", personnelOverview);
+
+        long expiredContracts = employees.stream()
+                .filter(emp -> emp.getContractEndDate() != null && emp.getContractEndDate().isBefore(today))
+                .count();
+        long expiringContracts = employees.stream()
+                .filter(emp -> emp.getContractEndDate() != null
+                        && !emp.getContractEndDate().isBefore(today)
+                        && !emp.getContractEndDate().isAfter(expiringLimit))
+                .count();
+        long activeContracts = employees.size() - expiredContracts - expiringContracts;
+
+        Map<String, Object> contractSituation = new LinkedHashMap<>();
+        contractSituation.put("active", activeContracts);
+        contractSituation.put("expiringSoon", expiringContracts);
+        contractSituation.put("expired", expiredContracts);
+        contractSituation.put("expiringWindowDays", 60);
+        response.put("contractSituation", contractSituation);
+
+        Map<String, BigDecimal> salaryByMonth = lockedPayrolls.stream()
+                .filter(p -> p != null && hasText(p.getThangNam()))
+                .collect(Collectors.groupingBy(
+                        Payroll::getThangNam,
+                        Collectors.reducing(BigDecimal.ZERO,
+                                p -> p.getThucLinh() != null ? p.getThucLinh() : BigDecimal.ZERO,
+                                BigDecimal::add)
+                ));
+
+        List<String> sortedSalaryMonths = salaryByMonth.keySet().stream()
+                .sorted(Comparator.comparing(this::parseMonthKey))
+                .collect(Collectors.toList());
+
+        String latestMonth = sortedSalaryMonths.isEmpty() ? null : sortedSalaryMonths.get(sortedSalaryMonths.size() - 1);
+        BigDecimal latestNetSalary = latestMonth == null ? BigDecimal.ZERO : salaryByMonth.getOrDefault(latestMonth, BigDecimal.ZERO);
+        List<Map<String, Object>> salaryTrend = sortedSalaryMonths.stream()
+                .skip(Math.max(0, sortedSalaryMonths.size() - 6))
+                .map(month -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("month", month);
+                    item.put("totalNetSalary", salaryByMonth.getOrDefault(month, BigDecimal.ZERO));
+                    return item;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> salaryFund = new LinkedHashMap<>();
+        salaryFund.put("latestMonth", latestMonth);
+        salaryFund.put("latestTotalNetSalary", latestNetSalary);
+        salaryFund.put("sixMonthTrend", salaryTrend);
+        response.put("salaryFund", salaryFund);
+
+        Map<String, Long> kpiDistribution = new LinkedHashMap<>();
+        kpiDistribution.put("Xuất sắc", 0L);
+        kpiDistribution.put("Tốt", 0L);
+        kpiDistribution.put("Đạt", 0L);
+        kpiDistribution.put("Không đạt", 0L);
+        for (KpiEvaluation kpi : kpis) {
+            String bucket = classifyKpi(kpi);
+            kpiDistribution.put(bucket, kpiDistribution.get(bucket) + 1);
+        }
+        Map<String, Object> kpiReport = new LinkedHashMap<>();
+        kpiReport.put("totalEvaluations", kpis.size());
+        kpiReport.put("distribution", kpiDistribution);
+        response.put("kpiReport", kpiReport);
+
+        long pendingLeaves = leaveRequests.stream().filter(req -> isPendingStatus(req.getStatus())).count();
+        long approvedLeaves = leaveRequests.stream().filter(req -> isApprovedStatus(req.getStatus())).count();
+        Map<String, Object> leaveSituation = new LinkedHashMap<>();
+        leaveSituation.put("pending", pendingLeaves);
+        leaveSituation.put("approved", approvedLeaves);
+        leaveSituation.put("totalRequests", leaveRequests.size());
+        response.put("leaveSituation", leaveSituation);
+
+        long rewardCount = rewardDisciplines.stream()
+                .filter(rd -> rd.getEffectiveDate() != null && rd.getEffectiveDate().getYear() == currentYear)
+                .filter(rd -> "KHEN_THUONG".equalsIgnoreCase(rd.getType()))
+                .count();
+        long disciplineCount = rewardDisciplines.stream()
+                .filter(rd -> rd.getEffectiveDate() != null && rd.getEffectiveDate().getYear() == currentYear)
+                .filter(rd -> "KY_LUAT".equalsIgnoreCase(rd.getType()))
+                .count();
+        Map<String, Object> rewardDisciplineReport = new LinkedHashMap<>();
+        rewardDisciplineReport.put("year", currentYear);
+        rewardDisciplineReport.put("rewardCount", rewardCount);
+        rewardDisciplineReport.put("disciplineCount", disciplineCount);
+        response.put("rewardDisciplineReport", rewardDisciplineReport);
+
+        return ResponseEntity.ok(response);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private YearMonth parseMonthKey(String month) {
+        try {
+            return YearMonth.parse(month, DateTimeFormatter.ofPattern("MM/yyyy"));
+        } catch (Exception e) {
+            return YearMonth.of(1900, 1);
+        }
+    }
+
+    private String classifyKpi(KpiEvaluation kpi) {
+        String raw = kpi.getXepLoai();
+        if (hasText(raw)) {
+            String normalized = raw.trim().toLowerCase();
+            if (normalized.contains("xuất") || normalized.contains("xuat")) return "Xuất sắc";
+            if (normalized.contains("tốt") || normalized.contains("tot")) return "Tốt";
+            if (normalized.contains("không") || normalized.contains("khong") || normalized.contains("chưa") || normalized.contains("chua")) return "Không đạt";
+            if (normalized.contains("đạt") || normalized.contains("dat") || normalized.contains("hoàn thành")) return "Đạt";
+            return "Không đạt";
+        }
+
+        if (kpi.getDiemDanhGia() == null) return "Không đạt";
+        if (kpi.getDiemDanhGia().compareTo(new BigDecimal("8.5")) >= 0) return "Xuất sắc";
+        if (kpi.getDiemDanhGia().compareTo(new BigDecimal("7.0")) >= 0) return "Tốt";
+        if (kpi.getDiemDanhGia().compareTo(new BigDecimal("5.0")) >= 0) return "Đạt";
+        return "Không đạt";
+    }
+
+    private boolean isPendingStatus(String status) {
+        if (!hasText(status)) return false;
+        String normalized = status.trim().toLowerCase();
+        return normalized.contains("chờ") || normalized.contains("cho") || normalized.contains("pending");
+    }
+
+    private boolean isApprovedStatus(String status) {
+        if (!hasText(status)) return false;
+        String normalized = status.trim().toLowerCase();
+        return normalized.contains("duyệt") || normalized.contains("duyet") || normalized.contains("approved");
     }
 }
