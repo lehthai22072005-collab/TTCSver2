@@ -34,6 +34,8 @@ public class AccountController {
         switch (role) {
             case "Admin":
                 return "admin";
+            case "Giảng viên":
+                return "staff";
             case "Kế toán":
                 return "accountant";
             case "Nhân viên":
@@ -44,6 +46,20 @@ public class AccountController {
                 return "human_resources";
             default:
                 return "staff";
+        }
+    }
+
+    private void applyAccountRoleToEmployee(Employee employee, String role) {
+        if (employee == null || role == null) {
+            return;
+        }
+
+        if ("Giảng viên".equals(role)) {
+            employee.setNhomNhanSu("Giảng viên");
+            employeeRepository.save(employee);
+        } else if ("NhÃ¢n viÃªn".equals(role) || "Nhân viên".equals(role)) {
+            employee.setNhomNhanSu("Nhân viên");
+            employeeRepository.save(employee);
         }
     }
 
@@ -99,6 +115,7 @@ public class AccountController {
             String sql = "SELECT e.id as employee_id, e.full_name, e.email, " +
                     "COALESCE(a.username, c.username, s.username, b.username, h.username) as username, " +
                     "CASE " +
+                    "WHEN s.username IS NOT NULL AND e.nhom_nhan_su = 'Giảng viên' THEN 'Giảng viên' " +
                     "WHEN a.username IS NOT NULL THEN 'Admin' " +
                     "WHEN c.username IS NOT NULL THEN 'Kế toán' " +
                     "WHEN b.username IS NOT NULL THEN 'Ban Giám Hiệu' " +
@@ -195,6 +212,7 @@ public class AccountController {
             }
 
             String table = getTableName(role);
+            applyAccountRoleToEmployee(emp, role);
 
             String sql = "INSERT INTO " + table + " (username, password, employee_id, status) VALUES (?, ?, ?, ?)";
 
@@ -263,6 +281,7 @@ public class AccountController {
             if (emp != null) {
                 emp.setFullName(data.get("fullName"));
                 emp.setEmail(data.get("email"));
+                applyAccountRoleToEmployee(emp, newRole);
                 employeeRepository.save(emp);
             }
 

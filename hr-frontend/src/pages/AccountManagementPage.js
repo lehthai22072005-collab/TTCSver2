@@ -228,6 +228,7 @@ function AccountManagementPage() {
                                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Role:</label>
                                     <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} style={inputStyle}>
                                         <option value="Admin">Admin</option>
+                                        <option value="Giảng viên">Giảng viên</option>
                                         <option value="Kế toán">Kế toán</option>
                                         <option value="Nhân viên">Nhân viên</option>
                                         <option value="Ban Giám Hiệu">Ban Giám Hiệu</option>
