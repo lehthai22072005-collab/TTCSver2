@@ -1,5 +1,7 @@
 package com.ptit.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -16,8 +18,18 @@ public class Employee {
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
+    @JsonIgnore
     @Column(name = "department")
-    private String department;
+    private String legacyDepartmentName;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id")
+    private Department departmentEntity;
+
+    @JsonIgnore
+    @Transient
+    private Long requestedDepartmentId;
 
     @Column(name = "position")
     private String position;
@@ -55,4 +67,30 @@ public class Employee {
 
     @Column(name = "bac_luong")
     private Integer bacLuong;
+
+    @JsonProperty("department")
+    public String getDepartment() {
+        if (departmentEntity != null && departmentEntity.getName() != null) {
+            return departmentEntity.getName();
+        }
+        return legacyDepartmentName;
+    }
+
+    @JsonProperty("department")
+    public void setDepartment(String department) {
+        this.legacyDepartmentName = department;
+    }
+
+    @JsonProperty("departmentId")
+    public Long getDepartmentId() {
+        if (departmentEntity != null) {
+            return departmentEntity.getId();
+        }
+        return requestedDepartmentId;
+    }
+
+    @JsonProperty("departmentId")
+    public void setDepartmentId(Long departmentId) {
+        this.requestedDepartmentId = departmentId;
+    }
 }

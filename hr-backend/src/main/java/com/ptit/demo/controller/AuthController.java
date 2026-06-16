@@ -106,9 +106,7 @@ public class AuthController {
             String finalRole = "STAFF";
             Employee employee = staffAccount.getEmployee();
 
-            if (employee != null
-                    && employee.getNhomNhanSu() != null
-                    && employee.getNhomNhanSu().equalsIgnoreCase("Giảng viên")) {
+            if (employee != null && isTeacherGroup(employee.getNhomNhanSu())) {
                 finalRole = "TEACHER";
             }
 
@@ -218,6 +216,17 @@ public class AuthController {
             }
         }
         return false;
+    }
+
+    private boolean isTeacherGroup(String group) {
+        if (group == null) {
+            return false;
+        }
+        String normalized = group.trim().toLowerCase();
+        return normalized.equals("giảng viên")
+                || normalized.equals("giang vien")
+                || normalized.contains("giảng")
+                || normalized.contains("giang");
     }
 
     private void lockAccountInDatabase(String username) {

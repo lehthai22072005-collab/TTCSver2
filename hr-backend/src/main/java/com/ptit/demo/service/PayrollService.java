@@ -56,7 +56,7 @@ public class PayrollService {
             BigDecimal standardDays = new BigDecimal("22");
             BigDecimal actualDays = new BigDecimal(workDays);
             
-            if ("Giảng viên".equals(emp.getNhomNhanSu())) {
+            if (isTeacherGroup(emp.getNhomNhanSu())) {
                 calculatedBaseSalary = baseSalary.multiply(actualDays).divide(standardDays, 0, RoundingMode.HALF_UP);
                 overtimeTeachingPeriods = Math.max(totalTeachingPeriods - STANDARD_TEACHING_PERIODS, 0);
                 teachingAllowance = OVERTIME_TEACHING_RATE.multiply(new BigDecimal(overtimeTeachingPeriods));
@@ -120,5 +120,16 @@ public class PayrollService {
         }
 
         return payrollList;
+    }
+
+    private boolean isTeacherGroup(String group) {
+        if (group == null) {
+            return false;
+        }
+        String normalized = group.trim().toLowerCase();
+        return normalized.equals("giảng viên")
+                || normalized.equals("giang vien")
+                || normalized.contains("giảng")
+                || normalized.contains("giang");
     }
 }

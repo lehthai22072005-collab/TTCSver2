@@ -53,6 +53,7 @@ const toEmployeePayload = (employee) => {
 
 function EmployeePage() {
     const [employees, setEmployees] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -76,6 +77,16 @@ function EmployeePage() {
 
     const [selectedEmployee, setSelectedEmployee] = useState(null);
 
+    const departmentOptions = departments.length > 0
+        ? departments.map(d => ({ id: d.id, name: d.name }))
+        : FACULTY_DEPARTMENTS.map((name, index) => ({ id: `fallback-${index}`, name }));
+
+    const findDepartmentOption = (nameOrId) => {
+        return departmentOptions.find(d => String(d.id) === String(nameOrId))
+            || departmentOptions.find(d => d.name === nameOrId)
+            || null;
+    };
+
     const fetchEmployees = async () => {
         try {
             const res = await axios.get("/api/employees");
@@ -87,8 +98,27 @@ function EmployeePage() {
         }
     };
 
+    const fetchDepartments = async () => {
+        try {
+            const res = await axios.get("/api/departments");
+            const list = res.data || [];
+            setDepartments(list);
+            if (list.length > 0) {
+                setNewEmployee(prev => prev.departmentId ? prev : ({
+                    ...prev,
+                    departmentId: list[0].id,
+                    department: list[0].name
+                }));
+            }
+        } catch (err) {
+            console.error("Lỗi khi tải danh sách phòng ban:", err);
+            setDepartments([]);
+        }
+    };
+
     useEffect(() => {
         fetchEmployees();
+        fetchDepartments();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -124,11 +154,34 @@ function EmployeePage() {
         const sanitizedEmp = { ...emp, position: getDisplayPosition(emp) };
 
         // LOGIC LỌC: Nếu không nằm trong list chuẩn thì đẩy về giá trị dự phòng
-        if (!FACULTY_DEPARTMENTS.includes(sanitizedEmp.department)) {
+        const matchedDepartment = findDepartmentOption(sanitizedEmp.departmentId || sanitizedEmp.department);
+        if (matchedDepartment) {
+            sanitizedEmp.departmentId = matchedDepartment.id;
+            sanitizedEmp.department = matchedDepartment.name;
+        } else if (!FACULTY_DEPARTMENTS.includes(sanitizedEmp.department)) {
+            sanitizedEmp.departmentId = '';
             sanitizedEmp.department = 'Không thuộc khoa';
         }
         setSelectedEmployee(sanitizedEmp);
         setShowUpdateModal(true);
+    };
+
+    const handleNewDepartmentChange = (value) => {
+        const dept = findDepartmentOption(value);
+        setNewEmployee({
+            ...newEmployee,
+            departmentId: dept && typeof dept.id === 'number' ? dept.id : '',
+            department: dept ? dept.name : value
+        });
+    };
+
+    const handleSelectedDepartmentChange = (value) => {
+        const dept = findDepartmentOption(value);
+        setSelectedEmployee({
+            ...selectedEmployee,
+            departmentId: dept && typeof dept.id === 'number' ? dept.id : '',
+            department: dept ? dept.name : value
+        });
     };
 
     const handleUpdateEmployee = async () => {
@@ -303,8 +356,8 @@ function EmployeePage() {
                             {/* DÙNG THẺ SELECT CHO PHÒNG BAN */}
                             <div>
                                 <label style={labelForm}>Phòng ban / Khoa</label>
-                                <select style={inputStyle} value={newEmployee.department} onChange={e => setNewEmployee({...newEmployee, department: e.target.value})}>
-                                    {FACULTY_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                <select style={inputStyle} value={newEmployee.departmentId || newEmployee.department} onChange={e => handleNewDepartmentChange(e.target.value)}>
+                                    {departmentOptions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
 
@@ -391,8 +444,8 @@ function EmployeePage() {
                             {/* DÙNG THẺ SELECT CHO PHÒNG BAN */}
                             <div>
                                 <label style={labelForm}>Phòng ban / Khoa</label>
-                                <select style={inputStyle} value={selectedEmployee.department} onChange={e => setSelectedEmployee({...selectedEmployee, department: e.target.value})}>
-                                    {FACULTY_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                <select style={inputStyle} value={selectedEmployee.departmentId || selectedEmployee.department} onChange={e => handleSelectedDepartmentChange(e.target.value)}>
+                                    {departmentOptions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
 

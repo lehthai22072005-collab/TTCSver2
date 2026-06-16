@@ -182,7 +182,7 @@ function SalaryPage() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#a3aed0', fontWeight: '500' }}>
+                                        <td colSpan="10" style={{ padding: '30px', textAlign: 'center', color: '#a3aed0', fontWeight: '500' }}>
                                             Chưa có dữ liệu tính toán. Vui lòng lựa chọn kỳ lương và nhấn nút chạy tính lương.
                                         </td>
                                     </tr>

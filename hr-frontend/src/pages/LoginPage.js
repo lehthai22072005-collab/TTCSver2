@@ -27,8 +27,8 @@ function LoginPage() {
                 if (response.data.employeeId) {
                     localStorage.setItem('employeeId', response.data.employeeId);
                 }
-                if (response.data.employeeName) {
-                    localStorage.setItem('fullName', response.data.employeeName);
+                if (response.data.fullName) {
+                    localStorage.setItem('fullName', response.data.fullName);
                 }
 
                 navigate('/dashboard');

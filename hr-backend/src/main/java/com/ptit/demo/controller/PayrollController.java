@@ -163,7 +163,7 @@ public class PayrollController {
 
             // Create Header Row
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"Mã NV", "Họ Tên", "Nhóm Nhân Sự", "Số Ngày Công", "Số Tiết Vượt Giờ", "Lương CB", "Hệ Số", "Tiền Giảng Dạy", "Bảo Hiểm", "Thuế TNCN", "Thưởng", "Phạt", "Thực Lĩnh"};
+            String[] headers = {"Mã NV", "Họ Tên", "Phòng Ban/Khoa", "Số Ngày Công", "Số Tiết Vượt Giờ", "Lương CB", "Hệ Số", "Tiền Giảng Dạy", "Bảo Hiểm", "Thuế TNCN", "Thưởng", "Phạt", "Thực Lĩnh"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
