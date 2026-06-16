@@ -92,10 +92,15 @@ function AdminDashboardPage() {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '20px' }}>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'minmax(360px, 0.8fr) minmax(0, 2fr)',
+                                gap: '20px',
+                                alignItems: 'stretch'
+                            }}>
 
                                 {/* Biểu đồ */}
-                                <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)' }}>
+                                <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)', minWidth: 0, overflow: 'hidden' }}>
                                     <h3 style={{ color: '#1b2559', fontWeight: 'bold', fontSize: '1.1rem', margin: '0 0 20px 0' }}>Phân bổ quyền (Roles)</h3>
                                     <div style={{ width: '100%', height: '250px' }}>
                                         <ResponsiveContainer>
@@ -118,13 +123,14 @@ function AdminDashboardPage() {
                                 </div>
 
                                 {/* Bảng Logs có phân trang */}
-                                <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.08)', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                         <h3 style={{ color: '#1b2559', fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Nhật ký hoạt động mới nhất</h3>
                                         <span onClick={() => navigate('/system-logs')} style={{ color: '#4318ff', fontSize: '0.9rem', fontWeight: 'bold', cursor: 'pointer' }}>Xem tất cả →</span>
                                     </div>
 
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', flex: 1 }}>
+                                    <div style={{ width: '100%', overflowX: 'auto', flex: 1 }}>
+                                    <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
                                         <thead>
                                         <tr style={{ borderBottom: '2px solid #f4f7fe', color: '#a3aed0', textAlign: 'left', fontSize: '0.85rem' }}>
                                             <th style={{ padding: '15px 10px', fontWeight: 'bold' }}>THỜI GIAN</th>
@@ -146,10 +152,11 @@ function AdminDashboardPage() {
                                         ))}
                                         </tbody>
                                     </table>
+                                    </div>
 
                                     {/* Nút Phân Trang (Chỉ hiện khi có nhiều hơn 1 trang) */}
                                     {totalPages > 1 && (
-                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '15px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '15px', flexWrap: 'wrap' }}>
                                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
                                                 <button
                                                     key={number}

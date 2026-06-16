@@ -2,15 +2,31 @@ package com.ptit.demo.controller;
 
 import com.ptit.demo.dto.LoginRequest;
 import com.ptit.demo.dto.LoginResponse;
-import com.ptit.demo.entity.*;
-import com.ptit.demo.repository.*;
+import com.ptit.demo.entity.Accountant;
+import com.ptit.demo.entity.Admin;
+import com.ptit.demo.entity.Director;
+import com.ptit.demo.entity.Employee;
+import com.ptit.demo.entity.Hr;
+import com.ptit.demo.entity.LoginAttempt;
+import com.ptit.demo.entity.Teacher;
+import com.ptit.demo.repository.AccountantRepository;
+import com.ptit.demo.repository.AdminRepository;
+import com.ptit.demo.repository.DirectorRepository;
+import com.ptit.demo.repository.HrRepository;
+import com.ptit.demo.repository.LoginAttemptRepository;
+import com.ptit.demo.repository.TeacherRepository;
 import com.ptit.demo.service.SystemConfigService;
 import com.ptit.demo.service.SystemLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,33 +70,16 @@ public class AuthController {
 
         if (isAccountLockedInDatabase(username)) {
             systemLogService.log("Đăng nhập thất bại: tài khoản đang bị khóa", username);
-            return ResponseEntity.badRequest().body(new LoginResponse(
-                    false,
-                    "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.",
-                    null,
-                    null,
-                    null
-            ));
+            return loginFailed("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.");
         }
 
         boolean maintenanceMode = configService.getBoolean("maintenanceMode", false);
         int maxLoginAttempts = configService.getInt("maxLoginAttempts", 5);
 
         Optional<Admin> adminOpt = adminRepository.findByUsername(username);
-
         if (adminOpt.isPresent() && adminOpt.get().getPassword().equals(password)) {
-            resetFailCount(username);
-            systemLogService.log("Đăng nhập thành công", username);
-
             Admin admin = adminOpt.get();
-
-            return ResponseEntity.ok(new LoginResponse(
-                    true,
-                    "Đăng nhập thành công",
-                    "ADMIN",
-                    admin.getEmployee() != null ? admin.getEmployee().getId() : null,
-                    admin.getEmployee() != null ? admin.getEmployee().getFullName() : "Admin"
-            ));
+            return successfulLogin(username, "ADMIN", admin.getEmployee(), "Admin");
         }
 
         if (maintenanceMode) {
@@ -95,123 +94,111 @@ public class AuthController {
         }
 
         int currentFailCount = getFailCount(username);
-
         if (currentFailCount >= maxLoginAttempts) {
             lockAccountInDatabase(username);
             systemLogService.log("Tài khoản bị khóa do đăng nhập sai quá số lần cho phép", username);
-            return ResponseEntity.badRequest().body(new LoginResponse(
-                    false,
-                    "Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.",
-                    null,
-                    null,
-                    null
-            ));
+            return loginFailed("Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.");
         }
 
         Optional<Teacher> teacherOpt = teacherRepository.findByUsername(username);
-
         if (teacherOpt.isPresent() && teacherOpt.get().getPassword().equals(password)) {
-            resetFailCount(username);
-            systemLogService.log("Đăng nhập thành công", username);
-
             Teacher staffAccount = teacherOpt.get();
             String finalRole = "STAFF";
+            Employee employee = staffAccount.getEmployee();
 
-            if (staffAccount.getEmployee() != null &&
-                    "Giảng viên".equalsIgnoreCase(staffAccount.getEmployee().getNhomNhanSu())) {
+            if (employee != null
+                    && employee.getNhomNhanSu() != null
+                    && employee.getNhomNhanSu().equalsIgnoreCase("Giảng viên")) {
                 finalRole = "TEACHER";
             }
 
-            return ResponseEntity.ok(new LoginResponse(
-                    true,
-                    "Đăng nhập thành công",
-                    finalRole,
-                    staffAccount.getEmployee() != null ? staffAccount.getEmployee().getId() : null,
-                    staffAccount.getEmployee() != null ? staffAccount.getEmployee().getFullName() : "Nhân sự"
-            ));
+            return successfulLogin(username, finalRole, employee, "Nhân sự");
         }
 
         Optional<Accountant> accountantOpt = accountantRepository.findByUsername(username);
-
         if (accountantOpt.isPresent() && accountantOpt.get().getPassword().equals(password)) {
-            resetFailCount(username);
-            systemLogService.log("Đăng nhập thành công", username);
-
             Accountant accountant = accountantOpt.get();
-
-            return ResponseEntity.ok(new LoginResponse(
-                    true,
-                    "Đăng nhập thành công",
-                    "ACCOUNTANT",
-                    accountant.getEmployee() != null ? accountant.getEmployee().getId() : null,
-                    accountant.getEmployee() != null ? accountant.getEmployee().getFullName() : "Kế toán"
-            ));
+            return successfulLogin(username, "ACCOUNTANT", accountant.getEmployee(), "Kế toán");
         }
 
         Optional<Director> directorOpt = directorRepository.findByUsername(username);
-
         if (directorOpt.isPresent() && directorOpt.get().getPassword().equals(password)) {
-            resetFailCount(username);
-            systemLogService.log("Đăng nhập thành công", username);
-
             Director director = directorOpt.get();
-
-            return ResponseEntity.ok(new LoginResponse(
-                    true,
-                    "Đăng nhập thành công",
-                    "DIRECTOR",
-                    director.getEmployee() != null ? director.getEmployee().getId() : null,
-                    director.getEmployee() != null ? director.getEmployee().getFullName() : "Ban Giám Hiệu"
-            ));
+            return successfulLogin(username, "DIRECTOR", director.getEmployee(), "Ban Giám Hiệu");
         }
 
         Optional<Hr> hrOpt = hrRepository.findByUsername(username);
-
         if (hrOpt.isPresent() && hrOpt.get().getPassword().equals(password)) {
-            resetFailCount(username);
-            systemLogService.log("Đăng nhập thành công", username);
-
             Hr hr = hrOpt.get();
-
-            return ResponseEntity.ok(new LoginResponse(
-                    true,
-                    "Đăng nhập thành công",
-                    "HR",
-                    hr.getEmployee() != null ? hr.getEmployee().getId() : null,
-                    hr.getEmployee() != null ? hr.getEmployee().getFullName() : "Phòng nhân sự"
-            ));
+            return successfulLogin(username, "HR", hr.getEmployee(), "Phòng nhân sự");
         }
 
         increaseFailCount(username);
 
         int afterFailCount = getFailCount(username);
-
         if (afterFailCount >= maxLoginAttempts) {
             lockAccountInDatabase(username);
             systemLogService.log("Tài khoản bị khóa do đăng nhập sai quá số lần cho phép", username);
-            return ResponseEntity.badRequest().body(new LoginResponse(
-                    false,
-                    "Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.",
-                    null,
-                    null,
-                    null
-            ));
+            return loginFailed("Tài khoản đã bị khóa do nhập sai quá " + maxLoginAttempts + " lần.");
         }
 
         systemLogService.log("Đăng nhập thất bại", username);
-        return ResponseEntity.badRequest().body(new LoginResponse(
-                false,
-                "Sai username hoặc password. Số lần sai: " + afterFailCount + "/" + maxLoginAttempts,
-                null,
-                null,
-                null
-        ));
+        return loginFailed("Sai username hoặc password. Số lần sai: " + afterFailCount + "/" + maxLoginAttempts);
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
         systemLogService.log("Đăng xuất khỏi hệ thống", request.get("username"));
         return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
+    }
+
+    private ResponseEntity<LoginResponse> successfulLogin(String username, String role, Employee employee, String fallbackName) {
+        ResponseEntity<LoginResponse> expiredResponse = rejectIfContractExpired(employee, username);
+        if (expiredResponse != null) {
+            return expiredResponse;
+        }
+
+        resetFailCount(username);
+        systemLogService.log("Đăng nhập thành công", username);
+
+        return ResponseEntity.ok(new LoginResponse(
+                true,
+                "Đăng nhập thành công",
+                role,
+                employee != null ? employee.getId() : null,
+                employee != null ? employee.getFullName() : fallbackName
+        ));
+    }
+
+    private ResponseEntity<LoginResponse> rejectIfContractExpired(Employee employee, String username) {
+        if (employee == null || employee.getContractEndDate() == null) {
+            return null;
+        }
+
+        if (!employee.getContractEndDate().isBefore(LocalDate.now())) {
+            return null;
+        }
+
+        systemLogService.log("Đăng nhập thất bại: hợp đồng đã hết hạn", username);
+        return loginFailed(
+                "Hợp đồng của tài khoản này đã hết hạn. Vui lòng liên hệ Phòng nhân sự.",
+                employee.getId(),
+                employee.getFullName()
+        );
+    }
+
+    private ResponseEntity<LoginResponse> loginFailed(String message) {
+        return loginFailed(message, null, null);
+    }
+
+    private ResponseEntity<LoginResponse> loginFailed(String message, Long employeeId, String fullName) {
+        return ResponseEntity.badRequest().body(new LoginResponse(
+                false,
+                message,
+                null,
+                employeeId,
+                fullName
+        ));
     }
 
     private boolean isAccountLockedInDatabase(String username) {
@@ -227,7 +214,7 @@ public class AuthController {
                     return true;
                 }
             } catch (Exception e) {
-                // Ignore
+                // Ignore missing/temporary table issues during startup.
             }
         }
         return false;
@@ -239,7 +226,7 @@ public class AuthController {
             try {
                 jdbcTemplate.update("UPDATE " + table + " SET status = 'Locked' WHERE username = ?", username);
             } catch (Exception e) {
-                // Ignore
+                // Ignore missing/temporary table issues during startup.
             }
         }
     }
